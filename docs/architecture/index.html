@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crossfire Client — Architecture Map</title>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d27;
+      --surface2: #22263a;
+      --border:   #2e3350;
+      --text:     #e2e8f0;
+      --muted:    #8892a4;
+      --accent:   #4f9cf9;
+
+      --c-build:    #6c757d;
+      --c-common:   #3b82f6;
+      --c-gtk3:     #22c55e;
+      --c-gtk2:     #a855f7;
+      --c-assets:   #f97316;
+      --c-platform: #ef4444;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── Layout ── */
+    .page-wrap { max-width: 1400px; margin: 0 auto; padding: 0 24px 80px; }
+
+    /* ── Header ── */
+    header {
+      padding: 40px 0 28px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
+    }
+    header h1 { font-size: 1.9rem; font-weight: 700; color: #fff; }
+    header h1 span { color: var(--accent); }
+    .header-meta {
+      display: flex; flex-wrap: wrap; gap: 16px;
+      margin-top: 10px; color: var(--muted); font-size: 13px;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 3px 10px; font-size: 12px;
+    }
+    .badge-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ── Nav tabs ── */
+    nav.tabs {
+      display: flex; gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+    .tab-btn {
+      background: none; border: none; color: var(--muted);
+      padding: 10px 18px; cursor: pointer; font-size: 14px;
+      border-bottom: 2px solid transparent; transition: color .15s, border-color .15s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Panels ── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Section headings ── */
+    h2 {
+      font-size: 1.15rem; font-weight: 600; color: #fff;
+      margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    h2 .swatch {
+      width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+    }
+    h3 { font-size: .95rem; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px; margin-bottom: 16px;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 14px; margin-bottom: 28px;
+    }
+    .file-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 16px;
+      border-left: 3px solid var(--layer-color, var(--border));
+      transition: border-color .2s, background .2s;
+    }
+    .file-card:hover { background: var(--surface2); }
+    .file-card.key-file { border-left-color: gold; }
+    .file-path {
+      font-family: ui-monospace, 'Cascadia Code', monospace;
+      font-size: 12px; color: var(--accent); margin-bottom: 6px;
+    }
+    .file-role { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .loc-badge {
+      display: inline-block; margin-top: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 7px; font-size: 11px; color: var(--muted);
+    }
+    .key-badge {
+      display: inline-block; margin-left: 6px;
+      background: rgba(255,215,0,.12); border: 1px solid rgba(255,215,0,.3);
+      border-radius: 4px; padding: 1px 7px; font-size: 11px; color: gold;
+    }
+
+    /* ── Architecture diagram ── */
+    #arch-diagram {
+      display: flex; flex-direction: column; gap: 10px;
+      margin-bottom: 36px;
+    }
+    .layer-row {
+      display: flex; align-items: stretch;
+      border: 1px solid var(--border); border-radius: 10px;
+      overflow: hidden;
+    }
+    .layer-label {
+      width: 180px; flex-shrink: 0;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 14px 16px;
+      font-weight: 600; font-size: 13px; color: #fff;
+      cursor: pointer;
+    }
+    .layer-label small {
+      font-weight: 400; font-size: 11px;
+      color: rgba(255,255,255,.55); margin-top: 3px; line-height: 1.3;
+    }
+    .layer-chips {
+      flex: 1; display: flex; flex-wrap: wrap; align-items: center;
+      gap: 6px; padding: 12px 16px; background: var(--surface);
+    }
+    .chip {
+      font-family: ui-monospace, 'Cascadia Code', monospace;
+      font-size: 11px; padding: 3px 9px;
+      border-radius: 5px; white-space: nowrap;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); cursor: default;
+    }
+    .chip.key { border-color: rgba(255,215,0,.4); color: gold; }
+
+    /* ── Data flow ── */
+    .flow-list { display: flex; flex-direction: column; gap: 8px; }
+    .flow-item {
+      display: grid;
+      grid-template-columns: 1fr 32px 1fr auto;
+      align-items: center; gap: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 16px;
+    }
+    .flow-from, .flow-to {
+      font-family: ui-monospace, 'Cascadia Code', monospace;
+      font-size: 12px; color: var(--accent);
+    }
+    .flow-arrow { color: var(--muted); font-size: 18px; text-align: center; }
+    .flow-label {
+      font-size: 12px; color: var(--text); font-weight: 500;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 8px; white-space: nowrap;
+    }
+    .flow-desc { grid-column: 1/-1; font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Dependency table ── */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
+    th {
+      text-align: left; padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+      font-size: 12px; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--muted);
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .pill {
+      display: inline-block; border-radius: 999px;
+      padding: 2px 9px; font-size: 11px; font-weight: 600;
+    }
+    .pill-req  { background: rgba(34,197,94,.15); color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
+    .pill-opt  { background: rgba(249,115,22,.15); color: #f97316; border: 1px solid rgba(249,115,22,.3); }
+    .pill-build { background: rgba(79,156,249,.15); color: #4f9cf9; border: 1px solid rgba(79,156,249,.3); }
+    code {
+      font-family: ui-monospace, 'Cascadia Code', monospace;
+      font-size: 12px; background: var(--surface2);
+      padding: 2px 6px; border-radius: 4px; color: var(--accent);
+    }
+
+    /* ── Design decisions ── */
+    .decision-list { display: flex; flex-direction: column; gap: 10px; }
+    .decision {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px; padding: 14px 16px;
+    }
+    .decision h4 { font-size: .9rem; font-weight: 600; color: #fff; margin-bottom: 6px; }
+    .decision p  { font-size: 13px; color: var(--muted); line-height: 1.55; }
+
+    /* ── Search box ── */
+    .search-wrap { margin-bottom: 20px; }
+    #search {
+      width: 100%; padding: 10px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 14px;
+      outline: none; transition: border-color .2s;
+    }
+    #search:focus { border-color: var(--accent); }
+    #search::placeholder { color: var(--muted); }
+    .hidden { display: none !important; }
+
+    /* ── Legend ── */
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+    .legend-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--muted);
+    }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .flow-item { grid-template-columns: 1fr; }
+      .flow-arrow { display: none; }
+      .layer-label { width: 120px; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- Header -->
+  <header>
+    <h1>Crossfire Client &mdash; <span>Architecture Map</span></h1>
+    <div class="header-meta">
+      <span class="badge"><span class="badge-dot" style="background:#22c55e"></span>Branch: crossfire-client-gtkv3</span>
+      <span class="badge">Version 1.75.5</span>
+      <span class="badge">License: GPLv2</span>
+      <span class="badge">Language: C99, Vala</span>
+      <span class="badge">Build: CMake &ge; 3.5</span>
+    </div>
+  </header>
+
+  <!-- Nav -->
+  <nav class="tabs">
+    <button class="tab-btn active" data-panel="overview">Overview</button>
+    <button class="tab-btn" data-panel="layers">Layers &amp; Files</button>
+    <button class="tab-btn" data-panel="dataflow">Data Flow</button>
+    <button class="tab-btn" data-panel="deps">Dependencies</button>
+    <button class="tab-btn" data-panel="decisions">Design Decisions</button>
+  </nav>
+
+  <!-- ── PANEL: OVERVIEW ── -->
+  <div id="overview" class="panel active">
+
+    <div class="card" style="margin-bottom:28px">
+      <h3 style="margin-bottom:8px">What is this?</h3>
+      <p style="color:var(--muted);line-height:1.65">
+        The Crossfire Client is the graphical frontend for the
+        <strong style="color:var(--text)">Crossfire</strong> cooperative multiplayer RPG server.
+        It connects over TCP using a custom binary protocol, receives map tile data, inventory,
+        stats, and text messages, and renders them using the GTK3 widget toolkit and Cairo 2D graphics.
+        This branch ports the existing GTK2 client to GTK3 while preserving the shared
+        <code>common/</code> protocol and data layer unchanged.
+      </p>
+    </div>
+
+    <!-- Diagram -->
+    <h2 style="margin-bottom:16px">Architectural Layers</h2>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--c-build)"></div>Build System</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--c-common)"></div>Common Library</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--c-gtk3)"></div>GTK v3 Client</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--c-gtk2)"></div>GTK v2 Client (legacy)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--c-assets)"></div>Assets &amp; Layouts</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--c-platform)"></div>Platform &amp; Packaging</div>
+      <div class="legend-item"><div class="legend-dot" style="background:gold"></div>Key entry-point file</div>
+    </div>
+
+    <div id="arch-diagram">
+      <!-- Row: Server -->
+      <div class="layer-row">
+        <div class="layer-label" style="background:#1c2030">
+          External
+          <small>Network</small>
+        </div>
+        <div class="layer-chips">
+          <span class="chip">Crossfire Server (TCP)</span>
+          <span class="chip">Metaserver 2 (HTTP/curl)</span>
+          <span class="chip">External Script Processes (pipe)</span>
+        </div>
+      </div>
+
+      <!-- Row: Common -->
+      <div class="layer-row" data-layer="common" style="cursor:pointer" title="Click to view files">
+        <div class="layer-label" style="background:rgba(59,130,246,.18)">
+          <span style="color:var(--c-common)">Common Library</span>
+          <small>cfclient (static)</small>
+        </div>
+        <div class="layer-chips">
+          <span class="chip">newsocket.c &mdash; TCP I/O</span>
+          <span class="chip">commands.c &mdash; Server→Client dispatch</span>
+          <span class="chip">p_cmd.c &mdash; Client→Server commands</span>
+          <span class="chip">mapdata.c &mdash; Tile data model</span>
+          <span class="chip">item.c &mdash; Inventory model</span>
+          <span class="chip">player.c &mdash; Player state</span>
+          <span class="chip">image.c &mdash; Face cache</span>
+          <span class="chip">script.c &mdash; Plugin scripting</span>
+          <span class="chip">script_lua.c &mdash; Lua bridge</span>
+          <span class="chip">metaserver.c &mdash; Server list</span>
+          <span class="chip">init.c</span>
+          <span class="chip">misc.c</span>
+        </div>
+      </div>
+
+      <!-- Row: GTK3 -->
+      <div class="layer-row" data-layer="gtk3" style="cursor:pointer" title="Click to view files">
+        <div class="layer-label" style="background:rgba(34,197,94,.18)">
+          <span style="color:var(--c-gtk3)">GTK v3 Client</span>
+          <small>gtk-v3/src/</small>
+        </div>
+        <div class="layer-chips">
+          <span class="chip key">main.c &mdash; Entry point</span>
+          <span class="chip key">map.c &mdash; Cairo tile render</span>
+          <span class="chip key">info.c &mdash; Message panes</span>
+          <span class="chip key">inventory.c &mdash; Item lists</span>
+          <span class="chip">account.c &mdash; Login</span>
+          <span class="chip">create_char.c &mdash; Char wizard</span>
+          <span class="chip">config.c &mdash; Settings/CSS</span>
+          <span class="chip">stats.c &mdash; Player stats</span>
+          <span class="chip">spells.c &mdash; Spell list</span>
+          <span class="chip">skills.c &mdash; Skill list</span>
+          <span class="chip">keys.c &mdash; Keybinds</span>
+          <span class="chip">pickup.c &mdash; Auto-pickup</span>
+          <span class="chip">menubar.c &mdash; Menu</span>
+          <span class="chip">metaserver.c &mdash; Server browser</span>
+          <span class="chip">magicmap.c &mdash; Overview</span>
+          <span class="chip">image.c &mdash; PNG→Cairo</span>
+          <span class="chip">png.c &mdash; PNG decode</span>
+          <span class="chip">sound.c &mdash; Audio</span>
+          <span class="chip">cfsndserv.c &mdash; Sound helper proc</span>
+          <span class="chip">snd.vala &mdash; Sound app wrapper</span>
+        </div>
+      </div>
+
+      <!-- Row: GTK2 -->
+      <div class="layer-row" data-layer="gtk2" style="cursor:pointer" title="Click to view files">
+        <div class="layer-label" style="background:rgba(168,85,247,.15)">
+          <span style="color:var(--c-gtk2)">GTK v2 Client</span>
+          <small>gtk-v2/src/ (legacy)</small>
+        </div>
+        <div class="layer-chips">
+          <span class="chip">main.c</span>
+          <span class="chip">map.c</span>
+          <span class="chip">info.c</span>
+          <span class="chip">inventory.c</span>
+          <span class="chip">config.c</span>
+          <span class="chip" style="color:var(--muted);font-style:italic">…same structure, GTK2 APIs</span>
+        </div>
+      </div>
+
+      <!-- Row: Assets -->
+      <div class="layer-row" data-layer="assets" style="cursor:pointer" title="Click to view files">
+        <div class="layer-label" style="background:rgba(249,115,22,.15)">
+          <span style="color:var(--c-assets)">Assets &amp; Layouts</span>
+          <small>ui/, themes/, sounds/</small>
+        </div>
+        <div class="layer-chips">
+          <span class="chip">gtk-v2.ui (default)</span>
+          <span class="chip">gtk-v1.ui</span>
+          <span class="chip">meflin.ui</span>
+          <span class="chip">sixforty.ui</span>
+          <span class="chip">oroboros.ui</span>
+          <span class="chip">eureka.ui</span>
+          <span class="chip">caelestis.ui</span>
+          <span class="chip">chthonic.ui</span>
+          <span class="chip">lobotomy.ui</span>
+          <span class="chip">v1-redux.ui</span>
+          <span class="chip">un-deux.ui</span>
+          <span class="chip">dialogs.ui (shared dialogs)</span>
+          <span class="chip">themes/Standard (GTK2 RC)</span>
+          <span class="chip">themes/Black (GTK2 RC)</span>
+          <span class="chip">sounds/*.wav/.ogg</span>
+          <span class="chip">pixmaps/*.gif</span>
+        </div>
+      </div>
+
+      <!-- Row: Build -->
+      <div class="layer-row" data-layer="build" style="cursor:pointer" title="Click to view files">
+        <div class="layer-label" style="background:rgba(108,117,125,.18)">
+          <span style="color:var(--c-build)">Build System</span>
+          <small>CMake + Vala + Perl</small>
+        </div>
+        <div class="layer-chips">
+          <span class="chip">CMakeLists.txt</span>
+          <span class="chip">config.h.in → config.h</span>
+          <span class="chip">resources.xml</span>
+          <span class="chip">cmake/FindVala.cmake</span>
+          <span class="chip">cmake/UseVala.cmake</span>
+          <span class="chip">common/items.pl</span>
+          <span class="chip">common/msgtypes.pl</span>
+        </div>
+      </div>
+
+      <!-- Row: Platform -->
+      <div class="layer-row" data-layer="platform" style="cursor:pointer" title="Click to view files">
+        <div class="layer-label" style="background:rgba(239,68,68,.15)">
+          <span style="color:var(--c-platform)">Platform &amp; Packaging</span>
+          <small>win32/, desktop</small>
+        </div>
+        <div class="layer-chips">
+          <span class="chip">win32/autobuild.ps1 (MSYS2)</span>
+          <span class="chip">win32/client.nsi (NSIS installer)</span>
+          <span class="chip">crossfire-client.desktop (XDG)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:10px">Build Output</h3>
+      <p style="color:var(--muted);margin-bottom:14px">
+        CMake produces one static library and one (or two) executables, plus
+        installed data files.
+      </p>
+      <table>
+        <thead><tr><th>Artifact</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>cfclient</code></td><td>Static lib</td><td>Shared protocol &amp; data layer (common/)</td></tr>
+          <tr><td><code>crossfire-client-gtk3</code></td><td>Executable</td><td>GTK3 client binary</td></tr>
+          <tr><td><code>crossfire-client-gtk2</code></td><td>Executable</td><td>GTK2 client binary (when GTK_VERSION=both)</td></tr>
+          <tr><td><code>share/crossfire-client/ui/*.ui</code></td><td>Data</td><td>GtkBuilder layout files</td></tr>
+          <tr><td><code>share/crossfire-client/sounds/</code></td><td>Data</td><td>Sound effects and music</td></tr>
+          <tr><td><code>share/crossfire-client/themes/</code></td><td>Data</td><td>Theme files (CSS for GTK3)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── PANEL: LAYERS & FILES ── -->
+  <div id="layers" class="panel">
+    <div class="search-wrap">
+      <input type="search" id="search" placeholder="Search files and descriptions…">
+    </div>
+    <div id="file-sections"></div>
+  </div>
+
+  <!-- ── PANEL: DATA FLOW ── -->
+  <div id="dataflow" class="panel">
+    <div class="card" style="margin-bottom:28px">
+      <p style="color:var(--muted)">
+        Shows the major data and control paths through the client at runtime.
+        The server communicates via TCP; all other flows are in-process function calls
+        or IPC pipes.
+      </p>
+    </div>
+    <div class="flow-list" id="flow-list"></div>
+  </div>
+
+  <!-- ── PANEL: DEPENDENCIES ── -->
+  <div id="deps" class="panel">
+    <div class="card" style="margin-bottom:24px">
+      <p style="color:var(--muted)">
+        External libraries resolved at configure time via <code>pkg-config</code>.
+        <span class="pill pill-req">Required</span> dependencies must be present.
+        <span class="pill pill-opt">Optional</span> features can be disabled with a cmake flag.
+        <span class="pill pill-build">Build-only</span> tools are not linked into the binary.
+      </p>
+    </div>
+    <table id="dep-table">
+      <thead>
+        <tr><th>Library</th><th>pkg-config</th><th>Purpose</th><th>Status</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- ── PANEL: DESIGN DECISIONS ── -->
+  <div id="decisions" class="panel">
+    <div class="card" style="margin-bottom:24px">
+      <p style="color:var(--muted)">
+        Non-obvious architectural choices made during the GTK2→GTK3 port.
+        These record the <em>why</em> so future maintainers do not have to
+        rediscover the same constraints.
+      </p>
+    </div>
+    <div class="decision-list" id="decision-list"></div>
+  </div>
+
+</div><!-- /.page-wrap -->
+
+<script>
+(function () {
+  /* ── Load JSON ── */
+  fetch('architecture.json')
+    .then(r => r.json())
+    .then(data => {
+      buildLayers(data.layers);
+      buildFlow(data.dataFlow);
+      buildDeps(data.externalDependencies);
+      buildDecisions(data.keyDesignDecisions);
+      wireLayerClicks(data.layers);
+      wireSearch();
+      wireTabs();
+    });
+
+  /* ── Layers & Files panel ── */
+  function buildLayers(layers) {
+    const container = document.getElementById('file-sections');
+    layers.forEach(layer => {
+      const section = document.createElement('div');
+      section.className = 'layer-section';
+      section.dataset.layerId = layer.id;
+
+      const h = document.createElement('h2');
+      h.innerHTML = `<span class="swatch" style="background:${layer.color}"></span>${layer.label}`;
+      section.appendChild(h);
+
+      const desc = document.createElement('p');
+      desc.style.cssText = 'color:var(--muted);margin-bottom:18px;line-height:1.6;font-size:13px';
+      desc.textContent = layer.description;
+      section.appendChild(desc);
+
+      const grid = document.createElement('div');
+      grid.className = 'card-grid';
+
+      layer.files.forEach(f => {
+        const card = document.createElement('div');
+        card.className = 'file-card' + (f.key ? ' key-file' : '');
+        card.style.setProperty('--layer-color', layer.color);
+
+        let inner = `<div class="file-path">${f.path}${f.key ? '<span class="key-badge">entry point</span>' : ''}</div>`;
+        inner += `<div class="file-role">${f.role}</div>`;
+        if (f.linesOfCode) inner += `<span class="loc-badge">${f.linesOfCode.toLocaleString()} lines</span>`;
+        card.innerHTML = inner;
+        grid.appendChild(card);
+      });
+
+      section.appendChild(grid);
+      container.appendChild(section);
+    });
+  }
+
+  /* ── Wire diagram layer clicks → switch to layers tab and scroll ── */
+  function wireLayerClicks(layers) {
+    document.querySelectorAll('[data-layer]').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.layer;
+        activateTab('layers');
+        const sec = document.querySelector(`.layer-section[data-layer-id="${id}"]`);
+        if (sec) setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+      });
+    });
+  }
+
+  /* ── Data flow panel ── */
+  function buildFlow(flows) {
+    const list = document.getElementById('flow-list');
+    flows.forEach(f => {
+      const item = document.createElement('div');
+      item.className = 'flow-item';
+      item.innerHTML = `
+        <div class="flow-from">${f.from}</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-to">${f.to}</div>
+        <div class="flow-label">${f.label}</div>
+        <div class="flow-desc">${f.description}</div>`;
+      list.appendChild(item);
+    });
+  }
+
+  /* ── Dependencies panel ── */
+  function buildDeps(deps) {
+    const tbody = document.querySelector('#dep-table tbody');
+    deps.forEach(d => {
+      const tr = document.createElement('tr');
+      let pill;
+      if (d.buildTimeOnly) {
+        pill = '<span class="pill pill-build">Build only</span>';
+      } else if (d.optional) {
+        const flag = d.buildFlag ? ` <code>-D${d.buildFlag}=OFF</code>` : '';
+        pill = `<span class="pill pill-opt">Optional${flag}</span>`;
+      } else {
+        pill = '<span class="pill pill-req">Required</span>';
+      }
+      let extra = '';
+      if (d.platform) extra = ` <span style="color:var(--muted);font-size:11px">(${d.platform} only)</span>`;
+      tr.innerHTML = `
+        <td><strong>${d.name}</strong></td>
+        <td><code>${d.pkg}</code></td>
+        <td style="color:var(--muted)">${d.purpose}</td>
+        <td>${pill}${extra}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  /* ── Design decisions panel ── */
+  function buildDecisions(decisions) {
+    const list = document.getElementById('decision-list');
+    decisions.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'decision';
+      el.innerHTML = `<h4>${d.decision}</h4><p>${d.rationale}</p>`;
+      list.appendChild(el);
+    });
+  }
+
+  /* ── Search ── */
+  function wireSearch() {
+    const input = document.getElementById('search');
+    input.addEventListener('input', () => {
+      const q = input.value.toLowerCase().trim();
+      document.querySelectorAll('.file-card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.classList.toggle('hidden', q.length > 0 && !text.includes(q));
+      });
+    });
+  }
+
+  /* ── Tabs ── */
+  function wireTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => activateTab(btn.dataset.panel));
+    });
+  }
+
+  function activateTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.panel === id));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === id));
+  }
+})();
+</script>
+</body>
+</html>

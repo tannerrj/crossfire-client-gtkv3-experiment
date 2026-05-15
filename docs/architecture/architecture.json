@@ -1,0 +1,688 @@
+{
+  "project": {
+    "name": "Crossfire Client",
+    "version": "1.75.5",
+    "license": "GPLv2",
+    "branch": "crossfire-client-gtkv3",
+    "description": "Cooperative multiplayer graphical RPG client. Communicates with a Crossfire server over TCP using a custom binary protocol. The GTK v3 client is a port of the GTK v2 client, preserving the common/ library and replacing all GTK2 API usage with GTK3 equivalents.",
+    "upstream": "https://git.code.sf.net/p/crossfire/crossfire-client",
+    "buildSystem": "CMake >= 3.5",
+    "languages": ["C (C99)", "Vala", "Perl (codegen)"]
+  },
+  "layers": [
+    {
+      "id": "build",
+      "label": "Build System",
+      "color": "#6c757d",
+      "description": "CMake configuration and supporting cmake modules.",
+      "files": [
+        {
+          "path": "CMakeLists.txt",
+          "role": "Root build configuration. Detects GTK2/GTK3 via pkg-config, handles optional features (sound, metaserver, Lua), sets up cross-platform X11 guards, and drives subdirectory builds.",
+          "options": [
+            { "name": "GTK_VERSION", "values": ["2", "3", "both"], "default": "both" },
+            { "name": "SOUND", "values": ["ON", "OFF"], "default": "ON" },
+            { "name": "METASERVER2", "values": ["ON", "OFF"], "default": "ON" },
+            { "name": "LUA", "values": ["ON", "OFF"], "default": "OFF" }
+          ]
+        },
+        {
+          "path": "config.h.in",
+          "role": "Template processed by CMake into config.h. Bakes CF_DATADIR (runtime data path), feature flags (HAVE_CURL, HAVE_X11, etc.), and VERSION into the binary at configure time."
+        },
+        {
+          "path": "cmake/FindVala.cmake",
+          "role": "Locates the Vala compiler (valac) on the build host."
+        },
+        {
+          "path": "cmake/UseVala.cmake",
+          "role": "Provides vala_precompile() macro that transpiles .vala source files to C before the main compilation step."
+        },
+        {
+          "path": "resources.xml",
+          "role": "GLib resource bundle manifest. Lists pixmaps and the default keymap (common/def-keys) to be compiled into the binary via glib-compile-resources so they are available without a filesystem lookup at runtime."
+        },
+        {
+          "path": "common/CMakeLists.txt",
+          "role": "Builds the shared cfclient static library from common/ source files. Both gtk-v2 and gtk-v3 link against this."
+        },
+        {
+          "path": "gtk-v3/CMakeLists.txt",
+          "role": "Top-level GTK3 client cmake file. Installs UI layouts, themes, and the desktop entry."
+        },
+        {
+          "path": "gtk-v3/src/CMakeLists.txt",
+          "role": "Compiles all GTK3 source files into the crossfire-client-gtk3 executable and links against cfclient, GTK3, SDL2, libpng, libcurl, and X11."
+        }
+      ]
+    },
+    {
+      "id": "common",
+      "label": "Common Library (cfclient)",
+      "color": "#0d6efd",
+      "description": "Platform-independent, toolkit-agnostic code compiled into the cfclient static library. Both the GTK2 and GTK3 clients link against this. Contains the network layer, server protocol dispatch, map data model, item model, player state, and optional scripting.",
+      "files": [
+        {
+          "path": "common/client.h",
+          "role": "Master header included by nearly every source file. Pulls in glib, item.h, newclient.h, version.h. Defines MAX_BUF, BIG_BUF, ExtTextManager callback type, and TextManager linked list for routing server text by type/subtype.",
+          "linesOfCode": 704,
+          "includeCount": 19
+        },
+        {
+          "path": "common/newsocket.c",
+          "role": "TCP socket management. Opens and closes the connection to the Crossfire server, handles blocking/non-blocking reads, and feeds raw bytes into the command dispatch loop.",
+          "linesOfCode": 266
+        },
+        {
+          "path": "common/commands.c",
+          "role": "Server-to-client command dispatch. Parses incoming server packets (drawinfo, stats, player, MapScroll, pixmap, etc.) and calls the appropriate GUI update functions via function pointers registered by the frontend.",
+          "linesOfCode": 2588
+        },
+        {
+          "path": "common/p_cmd.c",
+          "role": "Client-to-server command builder. Formats and sends player action packets (move, apply, examine, fire, etc.) to the server.",
+          "linesOfCode": 704
+        },
+        {
+          "path": "common/p_cmd.h",
+          "role": "Public API for client-to-server commands. Included by keys.c and menubar.c.",
+          "linesOfCode": 94
+        },
+        {
+          "path": "common/mapdata.c",
+          "role": "Map data model. Maintains a 2D array of map cells; each cell holds up to MAX_LAYERS face IDs, smoothing data, darkness, and animation state. Processes MapScroll and cell-update packets from the server.",
+          "linesOfCode": 1549
+        },
+        {
+          "path": "common/mapdata.h",
+          "role": "Structs and constants for the map cell model (MapCell, mapdata[][], fog-of-war, layer limits).",
+          "linesOfCode": 183
+        },
+        {
+          "path": "common/item.c",
+          "role": "Item data model. Maintains linked lists of items in the player's inventory and the ground view. Handles item addition, deletion, and update packets.",
+          "linesOfCode": 738
+        },
+        {
+          "path": "common/item.h",
+          "role": "item struct definition and item flag constants (applied, locked, magical, cursed, etc.).",
+          "linesOfCode": 92
+        },
+        {
+          "path": "common/player.c",
+          "role": "Player state management. Handles the player packet (character position, weight, stats) and maintains the current player item pointer.",
+          "linesOfCode": 364
+        },
+        {
+          "path": "common/client.c",
+          "role": "High-level client event loop support. Schedules timer callbacks for animation ticks and handles disconnection cleanup.",
+          "linesOfCode": 506
+        },
+        {
+          "path": "common/init.c",
+          "role": "One-time initialization. Sets default option values, registers command handlers, and prepares the client before the first server connection.",
+          "linesOfCode": 295
+        },
+        {
+          "path": "common/image.c",
+          "role": "Server-side face/image cache. Receives face data packets from the server, stores raw PNG bytes, and notifies the frontend when new images are ready to decode.",
+          "linesOfCode": 836
+        },
+        {
+          "path": "common/misc.c",
+          "role": "Utility functions: string helpers, logging (LOG()), error dialog wrappers.",
+          "linesOfCode": 130
+        },
+        {
+          "path": "common/metaserver.c",
+          "role": "Metaserver query. Fetches the public Crossfire server list from the metaserver2 HTTP endpoint using libcurl.",
+          "linesOfCode": 273
+        },
+        {
+          "path": "common/metaserver.h",
+          "role": "Server entry struct and metaserver query API.",
+          "linesOfCode": 38
+        },
+        {
+          "path": "common/script.c",
+          "role": "Client-side plugin scripting engine. Launches external scripts as child processes and exchanges structured messages with them over pipes.",
+          "linesOfCode": 1699
+        },
+        {
+          "path": "common/script_lua.c",
+          "role": "Lua 5.1 scripting bridge. Exposes client functions (move, examine, apply, etc.) to Lua scripts when the LUA build option is enabled.",
+          "linesOfCode": 399
+        },
+        {
+          "path": "common/script.h",
+          "role": "Public API for the scripting subsystem.",
+          "linesOfCode": 66
+        },
+        {
+          "path": "common/proto.h",
+          "role": "Function prototypes shared between common/ files.",
+          "linesOfCode": 114
+        },
+        {
+          "path": "common/external.h",
+          "role": "Extern declarations for global variables that common/ code writes and the frontend reads.",
+          "linesOfCode": 106
+        },
+        {
+          "path": "common/shared/newclient.h",
+          "role": "Shared protocol constants and structs kept in sync with the Crossfire server source tree. Defines command codes, face flags, NDI color codes, stat indices, etc.",
+          "linesOfCode": 0
+        },
+        {
+          "path": "common/items.pl",
+          "role": "Perl code generator. Reads common/item-types and emits item-types.h with item type ID constants.",
+          "linesOfCode": 0
+        },
+        {
+          "path": "common/msgtypes.pl",
+          "role": "Perl code generator. Emits msgtypes.h with server message type/subtype constants used for routing text to the correct info pane.",
+          "linesOfCode": 0
+        }
+      ]
+    },
+    {
+      "id": "gtk3",
+      "label": "GTK v3 Client (gtk-v3/src/)",
+      "color": "#198754",
+      "description": "GTK3-specific frontend. Each source file owns one subsystem of the UI. All files include client.h (common) and gtk3proto.h (internal function prototypes), and most include main.h for global widget pointers.",
+      "files": [
+        {
+          "path": "gtk-v3/src/main.c",
+          "role": "Entry point. Initialises GTK, parses command-line options, populates root_color[] with GdkRGBA values for all NDI colors, loads the UI layout via GtkBuilder, starts the connection loop, and runs gtk_main().",
+          "linesOfCode": 652,
+          "key": true
+        },
+        {
+          "path": "gtk-v3/src/main.h",
+          "role": "Global widget pointer externs (window_root, dialog_xml, window_xml, main_notebook, map_notebook, connect_window, magic_map, spinbutton_count) and the root_color[] array declaration.",
+          "linesOfCode": 52
+        },
+        {
+          "path": "gtk-v3/src/gtk3proto.h",
+          "role": "Internal function prototype header for all GTK3 frontend functions. Replaces the GTK2 gtk2proto.h. All .c files include this instead of forward-declaring functions individually.",
+          "linesOfCode": 256
+        },
+        {
+          "path": "gtk-v3/src/gtk2proto.h",
+          "role": "Retained GTK2 prototype header included for source compatibility with some common/ code that still references it. Not used for GTK3-specific functions.",
+          "linesOfCode": 232
+        },
+        {
+          "path": "gtk-v3/src/map.c",
+          "role": "Map rendering. Maintains an offscreen cairo_surface_t (map_surface). gtk_map_redraw() draws all tile layers, smoothing, darkness, and player position indicator into that surface, then calls gtk_widget_queue_draw(). map_draw_callback() composites the surface onto the widget cairo_t in the GTK3 draw signal.",
+          "linesOfCode": 727,
+          "key": true
+        },
+        {
+          "path": "gtk-v3/src/info.c",
+          "role": "Message/info pane. Manages multiple GtkTextBuffer panes. add_tags_to_textbuffer() creates one GtkTextTag per NDI color slot from root_color[]. Server messages are routed by type/subtype to the correct pane and colored via gtk_text_buffer_apply_tag().",
+          "linesOfCode": 1756,
+          "key": true
+        },
+        {
+          "path": "gtk-v3/src/info.h",
+          "role": "Info_Pane struct definition. Fields: textbuffer, textview, color_tags[], font_tags[], scroll adjustment.",
+          "linesOfCode": 68
+        },
+        {
+          "path": "gtk-v3/src/inventory.c",
+          "role": "Inventory panel. Two GtkTreeView/GtkTreeStore instances (player inventory and ground view) with GDK_TYPE_RGBA color columns. Item filter functions control which items appear in each notebook tab. Custom GtkCellRenderer draws item face icons via the Cairo draw signal.",
+          "linesOfCode": 1282,
+          "key": true
+        },
+        {
+          "path": "gtk-v3/src/config.c",
+          "role": "Settings management. Reads/writes a GKeyFile (section GTKv3). init_theme() loads GTK3 CSS via GtkCssProvider. load_theme() skips non-CSS legacy RC files and always notifies subsystems (info_get_styles, inventory_get_styles, etc.) after a theme change.",
+          "linesOfCode": 867
+        },
+        {
+          "path": "gtk-v3/src/account.c",
+          "role": "Account login and character selection. Manages the login dialog, account creation, and the character-select list. Communicates login credentials to the server via the common p_cmd API.",
+          "linesOfCode": 1310
+        },
+        {
+          "path": "gtk-v3/src/create_char.c",
+          "role": "Character creation wizard. Multi-step dialog for choosing race, class, starting stats, and character name. Sends the final character creation packet to the server.",
+          "linesOfCode": 895
+        },
+        {
+          "path": "gtk-v3/src/stats.c",
+          "role": "Player statistics panel. Reads the common stats struct and updates GtkLabel/GtkProgressBar widgets for HP, SP, grace, food, experience, resistances, and character attributes.",
+          "linesOfCode": 724
+        },
+        {
+          "path": "gtk-v3/src/spells.c",
+          "role": "Spell list panel. GtkTreeView backed by a GtkTreeStore with GDK_TYPE_RGBA color columns. Displays all known spells with mana/grace cost. Supports cast and invoke actions.",
+          "linesOfCode": 525
+        },
+        {
+          "path": "gtk-v3/src/skills.c",
+          "role": "Skills panel. GtkTreeView listing all player skills with level and experience. Read-only display driven by server skill update packets.",
+          "linesOfCode": 270
+        },
+        {
+          "path": "gtk-v3/src/keys.c",
+          "role": "Keybinding manager. Handles GTK key-press-event, maps keys to Crossfire commands, supports binding/unbinding from the settings dialog, and persists bindings to the config file.",
+          "linesOfCode": 2540
+        },
+        {
+          "path": "gtk-v3/src/pickup.c",
+          "role": "Pickup mode configuration panel. GtkCheckButton grid for toggling automatic item pickup categories (gold, armor, weapons, food, etc.).",
+          "linesOfCode": 653
+        },
+        {
+          "path": "gtk-v3/src/menubar.c",
+          "role": "Main menu bar. Connects menu item activate signals to client actions (connect, disconnect, configure, scripts, help). Uses p_cmd.h for server commands triggered from the menu.",
+          "linesOfCode": 279
+        },
+        {
+          "path": "gtk-v3/src/metaserver.c",
+          "role": "Server browser dialog. Calls common metaserver query, populates a GtkTreeView with server name/player count/description, and initiates a connection on row activation.",
+          "linesOfCode": 283
+        },
+        {
+          "path": "gtk-v3/src/magicmap.c",
+          "role": "Magic map overlay. Draws a small cairo overview of the current floor using color-coded tiles received from the server's magic map packet.",
+          "linesOfCode": 147
+        },
+        {
+          "path": "gtk-v3/src/image.c",
+          "role": "Client-side image/face renderer. Decodes PNG face data (from common image cache) into cairo_surface_t objects for use by map.c and inventory.c.",
+          "linesOfCode": 392
+        },
+        {
+          "path": "gtk-v3/src/image.h",
+          "role": "PixmapInfo struct: holds a cairo_surface_t per face, plus width/height and animation state.",
+          "linesOfCode": 60
+        },
+        {
+          "path": "gtk-v3/src/png.c",
+          "role": "libpng wrapper. Decodes raw PNG bytes (from the server face cache or pixmap resources) into RGBA pixel buffers that image.c converts to cairo surfaces.",
+          "linesOfCode": 464
+        },
+        {
+          "path": "gtk-v3/src/sound.c",
+          "role": "Sound effect and music playback via SDL2_mixer. Loads sounds from CF_DATADIR/sounds/ and plays them in response to server sound packets.",
+          "linesOfCode": 130
+        },
+        {
+          "path": "gtk-v3/src/cfsndserv.c",
+          "role": "Sound server helper process. A small standalone program that receives sound commands over a pipe from the main client process and drives SDL2_mixer independently to avoid blocking the GTK main loop.",
+          "linesOfCode": 242
+        },
+        {
+          "path": "gtk-v3/src/snd.vala",
+          "role": "Vala-language GLib.Application wrapper for the cfsndserv sound helper. Compiled by valac to C before the main cmake build.",
+          "linesOfCode": 37
+        },
+        {
+          "path": "gtk-v3/src/sound.h",
+          "role": "Public API for the sound subsystem (sound_init, play_sound, etc.).",
+          "linesOfCode": 14
+        }
+      ]
+    },
+    {
+      "id": "gtk2",
+      "label": "GTK v2 Client (gtk-v2/src/)",
+      "color": "#6f42c1",
+      "description": "Original GTK2 client. Structurally identical to gtk-v3 but uses GdkColor, GdkEventExpose, gdk_cairo_create(), gtk_rc_parse(), GtkStyle, and GDK_TYPE_COLOR throughout. Preserved on this branch without modification.",
+      "files": [
+        { "path": "gtk-v2/src/main.c", "role": "GTK2 entry point. Uses GdkColor for root_color[] and gtk_rc_parse() for themes.", "linesOfCode": 0 },
+        { "path": "gtk-v2/src/map.c", "role": "GTK2 map rendering. Uses gdk_cairo_create(event->window) in expose-event callback.", "linesOfCode": 0 },
+        { "path": "gtk-v2/src/info.c", "role": "GTK2 info pane. Color tags derived from GtkStyle RC properties.", "linesOfCode": 0 },
+        { "path": "gtk-v2/src/inventory.c", "role": "GTK2 inventory. Uses GDK_TYPE_COLOR and background-gdk/foreground-gdk cell renderer properties.", "linesOfCode": 0 },
+        { "path": "gtk-v2/src/config.c", "role": "GTK2 config. Uses gtk_rc_parse() and GKeyFile section GTKv2.", "linesOfCode": 0 }
+      ]
+    },
+    {
+      "id": "assets",
+      "label": "Assets & UI Layouts",
+      "color": "#fd7e14",
+      "description": "Runtime data files: GtkBuilder XML layouts, GTK themes, sounds, and pixmaps.",
+      "files": [
+        {
+          "path": "gtk-v3/ui/gtk-v2.ui",
+          "role": "Default UI layout (loaded on startup). Two-pane design with map center, inventory right, info panes bottom. Title: Crossfire Client - GTK v3 - GTK v2.",
+          "type": "layout"
+        },
+        {
+          "path": "gtk-v3/ui/gtk-v1.ui",
+          "role": "Classic GTK v1 style layout. Required a missing GtkAccelGroup declaration fix for GTK3 compatibility.",
+          "type": "layout"
+        },
+        {
+          "path": "gtk-v3/ui/meflin.ui",
+          "role": "Meflin community layout. Wider info area, compact map.",
+          "type": "layout"
+        },
+        {
+          "path": "gtk-v3/ui/sixforty.ui",
+          "role": "SixForty layout optimised for 640-pixel-wide displays. Required removal of GtkProgressBar.text_xalign (removed in GTK3).",
+          "type": "layout"
+        },
+        {
+          "path": "gtk-v3/ui/oroboros.ui",
+          "role": "Oroboros community layout.",
+          "type": "layout"
+        },
+        {
+          "path": "gtk-v3/ui/eureka.ui",
+          "role": "Eureka community layout.",
+          "type": "layout"
+        },
+        {
+          "path": "gtk-v3/ui/caelestis.ui",
+          "role": "Caelestis community layout.",
+          "type": "layout"
+        },
+        {
+          "path": "gtk-v3/ui/chthonic.ui",
+          "role": "Chthonic community layout.",
+          "type": "layout"
+        },
+        {
+          "path": "gtk-v3/ui/lobotomy.ui",
+          "role": "Lobotomy community layout.",
+          "type": "layout"
+        },
+        {
+          "path": "gtk-v3/ui/v1-redux.ui",
+          "role": "V1 Redux — modernised take on the GTK v1 layout.",
+          "type": "layout"
+        },
+        {
+          "path": "gtk-v3/ui/un-deux.ui",
+          "role": "Un-Deux community layout.",
+          "type": "layout"
+        },
+        {
+          "path": "gtk-v3/ui/dialogs.ui",
+          "role": "Shared dialog definitions: connect window, settings, keybinding editor, pickup configuration. Not a selectable layout.",
+          "type": "dialogs"
+        },
+        {
+          "path": "gtk-v3/themes/Standard",
+          "role": "Legacy GTK2 RC theme file. Skipped by the GTK3 client (not valid CSS); the system GTK3 theme is used instead.",
+          "type": "theme"
+        },
+        {
+          "path": "gtk-v3/themes/Black",
+          "role": "Legacy GTK2 RC dark theme. Skipped by GTK3 client.",
+          "type": "theme"
+        },
+        {
+          "path": "sounds/",
+          "role": "WAV/OGG sound effects and MP3/OGG background music tracks. Loaded by sound.c from CF_DATADIR/sounds/ at runtime. Configured by sounds/sounds.conf.",
+          "type": "sounds"
+        },
+        {
+          "path": "pixmaps/",
+          "role": "GIF/XPM inventory tab icons (all, hand, coin, lock, skull, etc.). Bundled into the binary via resources.xml / glib-compile-resources.",
+          "type": "pixmaps"
+        }
+      ]
+    },
+    {
+      "id": "platform",
+      "label": "Platform & Packaging",
+      "color": "#dc3545",
+      "description": "Win32 packaging scripts and cross-platform build support.",
+      "files": [
+        {
+          "path": "gtk-v3/win32/autobuild.ps1",
+          "role": "PowerShell script for automated Windows cross-compilation using MSYS2/MinGW. Installs dependencies, configures cmake, and produces a standalone Windows build.",
+          "linesOfCode": 491
+        },
+        {
+          "path": "gtk-v3/win32/client.nsi",
+          "role": "NSIS installer script for producing a Windows .exe installer package.",
+          "linesOfCode": 120
+        },
+        {
+          "path": "gtk-v3/crossfire-client.desktop",
+          "role": "XDG desktop entry for Linux application launchers.",
+          "type": "desktop"
+        }
+      ]
+    }
+  ],
+  "externalDependencies": [
+    {
+      "name": "GTK 3",
+      "pkg": "gtk+-3.0",
+      "purpose": "Widget toolkit, GtkBuilder XML loader, CSS theming engine, cairo graphics context",
+      "optional": false
+    },
+    {
+      "name": "GLib / GIO",
+      "pkg": "gio-2.0",
+      "purpose": "GKeyFile config, GtkBuilder resource loading, GMainLoop, GdkRGBA, type system",
+      "optional": false
+    },
+    {
+      "name": "Cairo",
+      "pkg": "bundled with GTK",
+      "purpose": "2D vector drawing for map tiles, inventory icons, magic map overlay",
+      "optional": false
+    },
+    {
+      "name": "libpng",
+      "pkg": "libpng",
+      "purpose": "Decodes PNG face/sprite data received from the server",
+      "optional": false
+    },
+    {
+      "name": "libcurl",
+      "pkg": "libcurl",
+      "purpose": "Fetches the server list from the Metaserver 2 HTTP endpoint",
+      "optional": true,
+      "buildFlag": "METASERVER2"
+    },
+    {
+      "name": "SDL2",
+      "pkg": "sdl2",
+      "purpose": "Audio subsystem initialisation base for SDL2_mixer",
+      "optional": true,
+      "buildFlag": "SOUND"
+    },
+    {
+      "name": "SDL2_mixer",
+      "pkg": "SDL2_mixer",
+      "purpose": "Sound effect and background music playback (WAV, OGG, MP3)",
+      "optional": true,
+      "buildFlag": "SOUND"
+    },
+    {
+      "name": "libX11",
+      "pkg": "x11",
+      "purpose": "X Window System integration; conditional on UNIX and NOT APPLE",
+      "optional": true,
+      "platform": "Linux"
+    },
+    {
+      "name": "Vala",
+      "pkg": "valac",
+      "purpose": "Compile-time only: transpiles snd.vala (sound helper) to C",
+      "optional": false,
+      "buildTimeOnly": true
+    },
+    {
+      "name": "Perl",
+      "pkg": "perl",
+      "purpose": "Compile-time only: runs items.pl and msgtypes.pl code generators",
+      "optional": false,
+      "buildTimeOnly": true
+    },
+    {
+      "name": "Lua 5.1",
+      "pkg": "lua51",
+      "purpose": "Optional scripting API exposed to external Lua scripts",
+      "optional": true,
+      "buildFlag": "LUA"
+    }
+  ],
+  "dataFlow": [
+    {
+      "from": "Crossfire Server",
+      "to": "common/newsocket.c",
+      "label": "TCP binary protocol",
+      "description": "Raw packet bytes over a persistent TCP connection"
+    },
+    {
+      "from": "common/newsocket.c",
+      "to": "common/commands.c",
+      "label": "Packet dispatch",
+      "description": "Decoded packets routed to handler functions by command code"
+    },
+    {
+      "from": "common/commands.c",
+      "to": "common/mapdata.c",
+      "label": "Map cell updates",
+      "description": "Map2 command updates MapCell structs (faces, darkness, animation)"
+    },
+    {
+      "from": "common/commands.c",
+      "to": "common/item.c",
+      "label": "Inventory updates",
+      "description": "Item add/del/update packets maintain inventory linked lists"
+    },
+    {
+      "from": "common/commands.c",
+      "to": "gtk-v3/src/info.c",
+      "label": "Server messages",
+      "description": "drawinfo packets routed by NDI color code to the info pane text buffers"
+    },
+    {
+      "from": "common/commands.c",
+      "to": "gtk-v3/src/stats.c",
+      "label": "Stats updates",
+      "description": "Stats packet drives label/progressbar refresh"
+    },
+    {
+      "from": "common/mapdata.c",
+      "to": "gtk-v3/src/map.c",
+      "label": "Tile data",
+      "description": "map.c reads mapdata[][] to render tiles via cairo into map_surface"
+    },
+    {
+      "from": "common/item.c",
+      "to": "gtk-v3/src/inventory.c",
+      "label": "Item list",
+      "description": "inventory.c iterates the item linked list to populate GtkTreeStore"
+    },
+    {
+      "from": "common/image.c",
+      "to": "gtk-v3/src/image.c",
+      "label": "Raw PNG bytes",
+      "description": "Server face data decoded to cairo_surface_t for rendering"
+    },
+    {
+      "from": "gtk-v3/src/image.c",
+      "to": "gtk-v3/src/map.c",
+      "label": "PixmapInfo",
+      "description": "Decoded face surfaces composited into map tiles"
+    },
+    {
+      "from": "gtk-v3/src/image.c",
+      "to": "gtk-v3/src/inventory.c",
+      "label": "PixmapInfo",
+      "description": "Face surfaces drawn in inventory item rows"
+    },
+    {
+      "from": "gtk-v3/src/main.c",
+      "to": "gtk-v3/src/config.c",
+      "label": "Theme init",
+      "description": "Startup calls init_theme() and config_load() to restore saved settings"
+    },
+    {
+      "from": "gtk-v3/src/config.c",
+      "to": "gtk-v3/src/info.c",
+      "label": "Style refresh",
+      "description": "load_theme() calls info_get_styles() to refresh color tag GdkRGBA values"
+    },
+    {
+      "from": "Metaserver 2 HTTP",
+      "to": "common/metaserver.c",
+      "label": "Server list JSON",
+      "description": "libcurl fetches available public servers; parsed into MetaServer structs"
+    },
+    {
+      "from": "common/metaserver.c",
+      "to": "gtk-v3/src/metaserver.c",
+      "label": "Server list",
+      "description": "Frontend populates GtkTreeView from MetaServer array"
+    },
+    {
+      "from": "gtk-v3/src/keys.c",
+      "to": "common/p_cmd.c",
+      "label": "Player commands",
+      "description": "Key events translated to move/fire/apply/examine server commands"
+    },
+    {
+      "from": "gtk-v3/src/menubar.c",
+      "to": "common/p_cmd.c",
+      "label": "Player commands",
+      "description": "Menu actions (cast spell, etc.) translated to server commands"
+    },
+    {
+      "from": "common/script.c",
+      "to": "External Script Process",
+      "label": "Pipe IPC",
+      "description": "Scripts receive game events and send back commands over stdin/stdout pipes"
+    },
+    {
+      "from": "gtk-v3/src/sound.c",
+      "to": "gtk-v3/src/cfsndserv.c",
+      "label": "Sound commands (pipe)",
+      "description": "Sound events forwarded to the cfsndserv helper process to avoid blocking the GTK main loop"
+    }
+  ],
+  "keyDesignDecisions": [
+    {
+      "decision": "Shared cfclient static library",
+      "rationale": "All protocol, network, map, item, and scripting code is toolkit-agnostic and compiled once into cfclient. Both GTK2 and GTK3 frontends link against the same library, keeping the codebase DRY and making future toolkit ports easier."
+    },
+    {
+      "decision": "Offscreen cairo_surface_t for map rendering",
+      "rationale": "GTK3 deprecated gdk_cairo_create() (removed in 3.22). Map rendering now draws into a persistent off-screen surface; the GTK draw signal callback composites it without redrawing all tiles on every expose."
+    },
+    {
+      "decision": "GdkRGBA instead of GdkColor",
+      "rationale": "GdkColor was removed in GTK3. GdkRGBA uses normalised doubles (0.0–1.0) instead of 16-bit integers. root_color[], inventory/spell tree store columns, and all cell renderer properties were migrated accordingly."
+    },
+    {
+      "decision": "GtkTextTag color tags created from root_color[] at init",
+      "rationale": "The GTK2 approach derived tag colors from GtkStyle (RC file). GTK3 removed GtkStyle. Tags are now created once in add_tags_to_textbuffer() from root_color[] (populated by gdk_rgba_parse at startup) and refreshed in-place by add_style_to_textbuffer() on theme changes."
+    },
+    {
+      "decision": "CSS theming via GtkCssProvider",
+      "rationale": "gtk_rc_parse() was removed in GTK3. Theme loading now uses GtkCssProvider with .gtk3.css files. Legacy RC theme files (Standard, Black) are skipped with a warning; the system GTK3 theme is the fallback."
+    },
+    {
+      "decision": "GtkBuilder signal connections in C, not UI files",
+      "rationale": "GTK3's GtkBuilder is strict: unknown signal names cause fatal errors. expose-event (replaced by draw), resize_mode, and extension_events were removed from all UI files. Draw callbacks are connected in C via g_signal_connect after widget lookup."
+    },
+    {
+      "decision": "use_stock property preserved in UI files",
+      "rationale": "use_stock is deprecated in GTK3 but not removed. Without it, stock IDs like gtk-quit appear as raw strings in button labels. Full migration to named icons and GtkModelButton is deferred."
+    },
+    {
+      "decision": "Sound server helper process (cfsndserv)",
+      "rationale": "SDL2_mixer is synchronous. Running it in the main GTK process would block the event loop on audio I/O. cfsndserv is a separate process receiving commands over a pipe, keeping the UI responsive."
+    },
+    {
+      "decision": "Per-layout window title includes layout name",
+      "rationale": "With 11 selectable layouts, users had no way to identify the active layout from the OS taskbar. Each .ui file hardcodes its own name into the GtkWindow title property."
+    },
+    {
+      "decision": "CF_DATADIR baked in at configure time",
+      "rationale": "The install prefix is set at cmake configure time and embedded in config.h as CF_DATADIR. The client looks for UI layouts, themes, and sounds relative to this path. Relocating the install directory requires a reconfigure and rebuild."
+    }
+  ]
+}
