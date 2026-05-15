@@ -656,13 +656,11 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="border_width">2</property>
-                        <property name="resize_mode">queue</property>
                         <child>
                           <object class="GtkDrawingArea" id="drawingarea_map">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <signal name="button-press-event" handler="on_drawingarea_map_button_press_event" swapped="no"/>
-                            <signal name="expose-event" handler="on_drawingarea_map_expose_event" swapped="no"/>
                           </object>
                         </child>
                       </object>
@@ -682,12 +680,10 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="border_width">2</property>
-                        <property name="resize_mode">queue</property>
                         <child>
                           <object class="GtkDrawingArea" id="drawingarea_magic_map">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <signal name="expose-event" handler="on_drawingarea_magic_map_expose_event" swapped="no"/>
                           </object>
                         </child>
                       </object>
@@ -723,7 +719,6 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="border_width">2</property>
-                        <property name="resize_mode">queue</property>
                         <child>
                           <object class="GtkHPaned" id="hpaned_stats_info2">
                             <property name="visible">True</property>
@@ -733,7 +728,6 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="border_width">2</property>
-                                <property name="resize_mode">queue</property>
                                 <child>
                                   <object class="GtkTable" id="table_statbars">
                                     <property name="visible">True</property>
@@ -1513,7 +1507,6 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="border_width">2</property>
-                                <property name="resize_mode">queue</property>
                                 <child>
                                   <object class="GtkScrolledWindow" id="scrolledwindow_textview2">
                                     <property name="visible">True</property>
@@ -1556,7 +1549,6 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="border_width">2</property>
-                        <property name="resize_mode">queue</property>
                         <child>
                           <object class="GtkTable" id="table_protections">
                             <property name="visible">True</property>
@@ -1803,7 +1795,6 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="border_width">2</property>
-                        <property name="resize_mode">queue</property>
                         <child>
                           <object class="GtkTable" id="table_skills_exp">
                             <property name="visible">True</property>
@@ -2073,7 +2064,6 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="border_width">2</property>
-                        <property name="resize_mode">queue</property>
                         <child>
                           <object class="GtkScrolledWindow" id="scrolledwindow_textview1">
                             <property name="visible">True</property>
@@ -2122,7 +2112,6 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="border_width">2</property>
-                            <property name="resize_mode">queue</property>
                             <child>
                               <object class="GtkScrolledWindow" id="scrolledwindow_look">
                                 <property name="visible">True</property>
@@ -2154,7 +2143,6 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="border_width">2</property>
-                            <property name="resize_mode">queue</property>
                             <child>
                               <object class="GtkNotebook" id="notebook_inv">
                                 <property name="visible">True</property>
@@ -2176,7 +2164,6 @@
                                             <property name="can_focus">True</property>
                                             <property name="n_rows">11</property>
                                             <property name="n_columns">10</property>
-                                            <signal name="expose-event" handler="on_inv_table_expose_event" swapped="no"/>
                                             <child>
                                               <placeholder/>
                                             </child>

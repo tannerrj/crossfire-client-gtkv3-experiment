@@ -582,7 +582,6 @@ Kevin Zheng &lt;kevinz5000@gmail.com&gt;</property>
                       <object class="GtkViewport" id="cc_attributes_frame_viewport">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="resize_mode">queue</property>
                         <child>
                           <object class="GtkTable" id="cc_attributes_frame_table">
                             <property name="width_request">100</property>
@@ -4079,7 +4078,6 @@ Enter a character name and password to add this account. The character must alre
                           <object class="GtkComboBox" id="config_combobox_lighting">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="extension_events">all</property>
                             <property name="model">sdl_lighting_liststore</property>
                             <child>
                               <object class="GtkCellRendererText" id="renderer1"/>

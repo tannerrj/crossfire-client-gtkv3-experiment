@@ -1198,7 +1198,6 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <signal name="button-press-event" handler="on_drawingarea_map_button_press_event" swapped="no"/>
-                                <signal name="expose-event" handler="on_drawingarea_map_expose_event" swapped="no"/>
                               </object>
                             </child>
                             <child type="tab">
@@ -1215,7 +1214,6 @@
                               <object class="GtkDrawingArea" id="drawingarea_magic_map">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <signal name="expose-event" handler="on_drawingarea_magic_map_expose_event" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="position">1</property>
@@ -1831,7 +1829,6 @@
                                             <property name="can_focus">True</property>
                                             <property name="n_rows">11</property>
                                             <property name="n_columns">10</property>
-                                            <signal name="expose-event" handler="on_inv_table_expose_event" swapped="no"/>
                                             <child>
                                               <placeholder/>
                                             </child>
