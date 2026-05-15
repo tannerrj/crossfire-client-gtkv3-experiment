@@ -152,6 +152,18 @@ void load_theme(int reload) {
         theme = g_strdup(data_path(THEME_DEFAULT));
     }
 
+    /* GTK3 port: only load theme files that are CSS (.css suffix).
+     * The bundled GTK2 RC theme files (themes/Standard, themes/Black) are
+     * not CSS and would fail to parse.  Skip them silently so the client
+     * falls back to the system GTK3 theme instead of spamming errors. */
+    const char *suffix = strrchr(theme, '.');
+    if (!suffix || strcmp(suffix, ".css") != 0) {
+        LOG(LOG_DEBUG, "load_theme",
+            "Skipping non-CSS theme file '%s'; use a .css file for GTK3 theming",
+            theme);
+        return;
+    }
+
     /* Load the selected theme CSS at USER priority. */
     theme_css_provider = load_css_file(theme_css_provider, theme,
                                        GTK_STYLE_PROVIDER_PRIORITY_USER);
