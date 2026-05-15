@@ -335,8 +335,14 @@ void add_tags_to_textbuffer(Info_Pane *pane, GtkTextBuffer *textbuf)
         pane->font_tags[i] = NULL;
     }
 
+    /* GTK3: create a colored text tag for each NDI color from root_color[].
+     * root_color[] is populated from colorname[] via gdk_rgba_parse() in
+     * main.c before info_init() is called, so the values are valid here. */
     for (i = 0; i < NUM_COLORS; i++) {
-        pane->color_tags[i] = NULL;
+        pane->color_tags[i] = gtk_text_buffer_create_tag(
+            pane->textbuffer, NULL,
+            "foreground-rgba", &root_color[i],
+            NULL);
     }
     /*
      * These tag definitions never change - we don't get them from the
@@ -382,23 +388,16 @@ void add_style_to_textbuffer(Info_Pane *pane)
 {
     int i;
 
-    /* Clear previously created color tags. */
+    /* GTK3: refresh foreground-rgba on existing color tags from root_color[].
+     * In GTK2 this function replaced tags built from a GtkStyle (RC-derived
+     * colors).  In GTK3 the tags are owned by the pane and their colors come
+     * from root_color[], so we update in-place rather than destroying them.
+     * Destroying the tags here would break all server-colored messages. */
     for (i = 0; i < NUM_COLORS; i++) {
         if (pane->color_tags[i]) {
-            gtk_text_tag_table_remove(
-                gtk_text_buffer_get_tag_table(pane->textbuffer),
-                pane->color_tags[i]);
-            pane->color_tags[i] = NULL;
-        }
-    }
-
-    /* Clear previously created font style tags. */
-    for (i = 0; i < NUM_FONTS; i++) {
-        if (pane->font_tags[i]) {
-            gtk_text_tag_table_remove(
-                gtk_text_buffer_get_tag_table(pane->textbuffer),
-                pane->font_tags[i]);
-            pane->font_tags[i] = NULL;
+            g_object_set(pane->color_tags[i],
+                         "foreground-rgba", &root_color[i],
+                         NULL);
         }
     }
 }
