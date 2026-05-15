@@ -1,0 +1,78 @@
+name: GTK3 Client Build
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "gtk-v3/**"
+      - "common/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - "config.h.in"
+      - "buildconfig.h.in"
+      - "resources.xml"
+      - ".github/workflows/build-gtk3.yml"
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "gtk-v3/**"
+      - "common/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - "config.h.in"
+      - "buildconfig.h.in"
+      - "resources.xml"
+      - ".github/workflows/build-gtk3.yml"
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            cmake \
+            pkg-config \
+            perl \
+            valac \
+            libgtk-3-dev \
+            libglib2.0-dev-bin \
+            libpng-dev \
+            libcurl4-openssl-dev \
+            libsdl2-mixer-dev \
+            libx11-dev
+
+      - name: Configure (GTK3 only)
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DGTK_VERSION=3 \
+            -DMETASERVER2=ON \
+            -DSOUND=ON \
+            -DLUA=OFF
+
+      - name: Build
+        run: cmake --build build --target crossfire-client-gtk3 --parallel $(nproc)
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure --timeout 30
+
+      - name: Upload binary
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crossfire-client-gtk3-${{ matrix.os }}
+          path: build/gtk-v3/src/crossfire-client-gtk3
+          retention-days: 7
