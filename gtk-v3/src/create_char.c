@@ -571,7 +571,7 @@ on_combobox_rcs_changed(GtkComboBox *box, gpointer user_data)
         label_stat = label_rs;
         opt_start = RACE_OPT_START;
     } else {
-        LOG(LOG_ERROR, "gtk-v2/src/create_char.c:on_combobox_rcs_changed",
+        LOG(LOG_ERROR, "gtk-v3/src/create_char.c:on_combobox_rcs_changed",
             "Passed in combobox does not match any combobox");
         return;
     }
@@ -582,7 +582,7 @@ on_combobox_rcs_changed(GtkComboBox *box, gpointer user_data)
         GtkTreeIter iter;
 
         if (i == (NUM_OPT_FIELDS/2)) {
-            LOG(LOG_ERROR, "gtk-v2/src/create_char.c:on_combobox_rcs_changed",
+            LOG(LOG_ERROR, "gtk-v3/src/create_char.c:on_combobox_rcs_changed",
                 "Number of racial option exceeds allocated amount (%d > %d)",
                 i, NUM_OPT_FIELDS/2);
             break;

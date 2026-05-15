@@ -39,7 +39,7 @@
 
 /**
  * @{
- * @name GTK V2 Font Style Definitions.
+ * @name GTK V3 Font Style Definitions.
  * Font style support definitions for the info window.
  * Font style defines are indices into the font_style_names[] array.
  * The actual fonts that they are bound to are set up in the style file.

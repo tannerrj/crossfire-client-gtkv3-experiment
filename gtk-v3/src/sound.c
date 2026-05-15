@@ -13,7 +13,7 @@
 
 /**
  * @file
- * This file contains the sound support for the GTK V2 client.  It does not
+ * This file contains the sound support for the GTK V3 client.  It does not
  * actually play sounds, but rather tries to run cfsndserve, which is
  * responsible for playing sounds.
  */
@@ -51,7 +51,7 @@ void Sound2Cmd(unsigned char *data, int len) {
      */
     if (len < 8) {
         LOG(LOG_WARNING,
-            "gtk-v2::Sound2Cmd", "Sound command too short: %d\n bytes", len);
+            "gtk-v3::Sound2Cmd", "Sound command too short: %d\n bytes", len);
         return;
     }
 
@@ -67,7 +67,7 @@ void Sound2Cmd(unsigned char *data, int len) {
      */
     if (6 + len_sound + 1 > len) {
         LOG(LOG_WARNING,
-            "gtk-v2::Sound2Cmd", "sound length check: %i len: %i\n",
+            "gtk-v3::Sound2Cmd", "sound length check: %i len: %i\n",
             len_sound, len);
         return;
     }
@@ -83,7 +83,7 @@ void Sound2Cmd(unsigned char *data, int len) {
      */
     if (6 + len_sound + 1 + len_source > len) {
         LOG(LOG_WARNING,
-            "gtk-v2::Sound2Cmd", "source length check: %i len: %i\n",
+            "gtk-v3::Sound2Cmd", "source length check: %i len: %i\n",
             len_source, len);
         return;
     }
@@ -120,7 +120,7 @@ void MusicCmd(const char *data, int len) {
      */
     // Check for null terminator.
     if (data[len]) {
-        LOG(LOG_ERROR, "gtk-v2::MusicCmd",
+        LOG(LOG_ERROR, "gtk-v3::MusicCmd",
             "Music command string is not null-terminated.");
         return;
     }

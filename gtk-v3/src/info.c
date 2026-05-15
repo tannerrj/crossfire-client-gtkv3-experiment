@@ -52,7 +52,7 @@ static const char *font_style_names[NUM_FONTS] = {
     "info_font_hand"
 };
 /**
- * @} EndOf GTK V2 Font Style Definitions.
+ * @} EndOf GTK V3 Font Style Definitions.
  */
 
 /**
@@ -91,7 +91,7 @@ static int max_subtype=0, has_style=0;
 
 /**
  * @{
- * @name GTK V2 Message Control System.
+ * @name GTK V3 Message Control System.
  * Supports a client-side implementation of what used to be provided by the
  * server output-count and output-sync commands.  These defines presently
  * control the way the system works.  The hardcoded values here are temporary
@@ -295,7 +295,7 @@ struct msgctrl_data_t {
     { "Client-generated messages",       FALSE, {     TRUE,   FALSE } }
 };
 /**
- * @} EndOf GTK V2 Message Control System.
+ * @} EndOf GTK V3 Message Control System.
  */
 
 extern bool arm_mapedit;
@@ -739,7 +739,7 @@ void add_marked_text_to_pane(Info_Pane *pane, const char *message, int type, int
 /**
  * A message processor that accepts messages along with meta information color
  * and type.  The message type and subtype are analyzed to select font and
- * other text attributes.  All gtk-v2 client messages pass through this
+ * other text attributes.  All gtk-v3 client messages pass through this
  * processor before being output.  Before addition of the output buffering
  * feature, this was the message callback function.  It is a separate function
  * so that it can be called both by the callback, and but buffer maintenance
@@ -822,7 +822,7 @@ void draw_ext_info(int orig_color, int type, int subtype, const char *message)
 }
 
 /**
- * @defgroup GTKv2OutputCountSync GTK V2 client output count/sync functions.
+ * @defgroup GTKv3OutputCountSync GTK V3 client output count/sync functions.
  * @{
  */
 
@@ -1162,7 +1162,7 @@ message_callback(int orig_color, int type, int subtype, char *message)
 }
 
 /**
- * @} */ /* EndOf GTKv2OutputCountSync
+ * @} */ /* EndOf GTKv3OutputCountSync
  */
 
 /**
@@ -1379,7 +1379,7 @@ void save_msgctrl_configuration(void)
 
     if (make_path_to_file(pathbuf) == -1) {
         LOG(LOG_WARNING,
-            "gtk-v2::save_msgctrl_configuration","Error creating %s",pathbuf);
+            "gtk-v3::save_msgctrl_configuration","Error creating %s",pathbuf);
         snprintf(textbuf, sizeof(textbuf),
                  "Error creating %s, Message Control settings not saved.",pathbuf);
         draw_ext_info(
@@ -1422,7 +1422,7 @@ void save_msgctrl_configuration(void)
     fprintf(fptr, "#\n# End of Message Control System Configuration\n");
     fclose(fptr);
 
-    LOG(LOG_DEBUG, "gtk-v2::save_msgctrl_configuration",
+    LOG(LOG_DEBUG, "gtk-v3::save_msgctrl_configuration",
             "Message control settings saved to '%s'", pathbuf);
 
     snprintf(textbuf, sizeof(textbuf), "Message control settings saved!");
@@ -1591,7 +1591,7 @@ void load_msgctrl_configuration(void)
                  "Corrupted Message Control settings in %s.", pathbuf);
         draw_ext_info(
             NDI_RED, MSG_TYPE_CLIENT, MSG_TYPE_CLIENT_ERROR, textbuf);
-        LOG(LOG_ERROR, "gtk-v2::load_msgctrl_configuration",
+        LOG(LOG_ERROR, "gtk-v3::load_msgctrl_configuration",
             "Error loading %s. %s\n", pathbuf, textbuf);
     }
     /*
@@ -1600,7 +1600,7 @@ void load_msgctrl_configuration(void)
      * widgets.  so they reflect the states that were previously saved.
      */
     if ((cvalid + tvalid + mvalid) > 0) {
-        LOG(LOG_DEBUG, "gtk-v2::load_msgctrl_configuration",
+        LOG(LOG_DEBUG, "gtk-v3::load_msgctrl_configuration",
                 "Message control settings loaded from '%s'", pathbuf);
         update_msgctrl_configuration(); /* Update checkboxes w/ loaded data */
     }

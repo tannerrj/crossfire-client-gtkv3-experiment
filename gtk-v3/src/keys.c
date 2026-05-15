@@ -12,7 +12,7 @@
  */
 
 /**
- * @file gtk-v2/src/keys.c
+ * @file gtk-v3/src/keys.c
  * Handles most of the keyboard related functions - binding and unbinding keys,
  * and handling keypresses and looking up the keys.
  */
@@ -241,7 +241,7 @@ static int keybind_insert(guint32 keysym, unsigned int flags,
          * Also, if the new binding has the ANY flag, remove all matching
          * previous bindings and keep this one.
          */
-        LOG(LOG_DEBUG, "gtk-v2::keybind_insert",
+        LOG(LOG_DEBUG, "gtk-v3::keybind_insert",
             "Overwriting previous binding for key %s with command %s ",
             gdk_keyval_name(keysym), kb->command);
         keybind_remove(kb);
@@ -330,7 +330,7 @@ static void parse_keybind_line(char *buf, int line, unsigned int scope_flag) {
     }
     cpnext = strchr(buf, ' ');
     if (cpnext == NULL) {
-        LOG(LOG_WARNING, "gtk-v2::parse_keybind_line",
+        LOG(LOG_WARNING, "gtk-v3::parse_keybind_line",
             "Line %d (%s) corrupted in keybinding file.", line, buf);
         return;
     }
@@ -342,14 +342,14 @@ static void parse_keybind_line(char *buf, int line, unsigned int scope_flag) {
         }
         cp = strchr(cpnext, ' ');
         if (!cp) {
-            LOG(LOG_WARNING, "gtk-v2::parse_keybind_line",
+            LOG(LOG_WARNING, "gtk-v3::parse_keybind_line",
                 "Line %d (%s) corrupted in keybinding file.", line, buf);
             return;
         }
         *cp++ = 0;  /* Null terminate it */
         cp1 = strchr(cp, ' ');
         if (!cp1) {
-            LOG(LOG_WARNING, "gtk-v2::parse_keybind_line",
+            LOG(LOG_WARNING, "gtk-v3::parse_keybind_line",
                 "Line %d (%s) corrupted in keybinding file.", line, buf);
             return;
         }
@@ -357,7 +357,7 @@ static void parse_keybind_line(char *buf, int line, unsigned int scope_flag) {
         keysym = gdk_keyval_from_name(cp);
         /* As of now, all these keys must have keysyms */
         if (keysym == 0) {
-            LOG(LOG_WARNING, "gtk-v2::parse_keybind_line",
+            LOG(LOG_WARNING, "gtk-v3::parse_keybind_line",
                 "Could not convert %s into keysym", cp);
             return;
         }
@@ -413,14 +413,14 @@ static void parse_keybind_line(char *buf, int line, unsigned int scope_flag) {
         *cpnext++ = '\0';
         keysym = gdk_keyval_from_name(buf);
         if (!keysym) {
-            LOG(LOG_WARNING, "gtk-v2::parse_keybind_line",
+            LOG(LOG_WARNING, "gtk-v3::parse_keybind_line",
                 "Unable to convert line %d (%s) into keysym", line, buf);
             return;
         }
         cp = cpnext;
         cpnext = strchr(cp, ' ');
         if (cpnext == NULL) {
-            LOG(LOG_WARNING, "gtk-v2::parse_keybind_line",
+            LOG(LOG_WARNING, "gtk-v3::parse_keybind_line",
                 "Line %d (%s) corrupted in keybinding file.", line, cp);
             return;
         }
@@ -429,7 +429,7 @@ static void parse_keybind_line(char *buf, int line, unsigned int scope_flag) {
         cp = cpnext;
         cpnext = strchr(cp, ' ');
         if (cpnext == NULL) {
-            LOG(LOG_WARNING, "gtk-v2::parse_keybind_line",
+            LOG(LOG_WARNING, "gtk-v3::parse_keybind_line",
                 "Line %d (%s) corrupted in keybinding file.", line, cp);
             return;
         }
@@ -466,11 +466,11 @@ static void parse_keybind_line(char *buf, int line, unsigned int scope_flag) {
                     flags |= KEYF_MOD_CTRL;
                     break;
                 case 'S':
-                    LOG(LOG_WARNING, "gtk-v2::parse_keybind_line",
+                    LOG(LOG_WARNING, "gtk-v3::parse_keybind_line",
                         "Deprecated flag (S) ignored at line %d in key binding file", line);
                     break;
                 default:
-                    LOG(LOG_WARNING, "gtk-v2::parse_keybind_line",
+                    LOG(LOG_WARNING, "gtk-v3::parse_keybind_line",
                         "Unknown flag (%c) line %d in key binding file",
                         *cp, line);
             }
@@ -479,7 +479,7 @@ static void parse_keybind_line(char *buf, int line, unsigned int scope_flag) {
 
         if (strlen(cpnext) > (sizeof(bind_buf) - 1)) {
             cpnext[sizeof(bind_buf) - 1] = '\0';
-            LOG(LOG_WARNING, "gtk-v2::parse_keybind_line",
+            LOG(LOG_WARNING, "gtk-v3::parse_keybind_line",
                 "Command too long! Truncated.");
         }
 
@@ -1283,11 +1283,11 @@ static void save_keys(void) {
     if (cpl.name) {
         snprintf(buf, sizeof(buf), "%s/%s.%s.keys", config_dir,
                 csocket.servername, cpl.name);
-        LOG(LOG_INFO, "gtk-v2::save_keys",
+        LOG(LOG_INFO, "gtk-v3::save_keys",
             "Saving character specific keybindings to %s", buf);
 
         if (make_path_to_file(buf) == -1) {
-            LOG(LOG_WARNING, "gtk-v2::save_keys", "Could not create %s", buf);
+            LOG(LOG_WARNING, "gtk-v3::save_keys", "Could not create %s", buf);
         }
 
         fp = fopen(buf, "w");
@@ -1305,11 +1305,11 @@ static void save_keys(void) {
 
     /* Open file to save global user bindings */
     snprintf(buf, sizeof(buf), "%s/keys", config_dir);
-    LOG(LOG_INFO, "gtk-v2::save_keys",
+    LOG(LOG_INFO, "gtk-v3::save_keys",
         "Saving global user's keybindings to %s", buf);
 
     if (make_path_to_file(buf) == -1) {
-        LOG(LOG_WARNING, "gtk-v2::save_keys", "Could not create %s", buf);
+        LOG(LOG_WARNING, "gtk-v3::save_keys", "Could not create %s", buf);
     } else {
         fp = fopen(buf, "w");
         if (fp == NULL) {
@@ -1508,7 +1508,7 @@ void unbind_key(const char *params) {
                                   MSG_TYPE_CLIENT_CONFIG, buf);
                     res = keybind_remove(kb);
                     if (res < 0)
-                        LOG(LOG_ERROR, "gtk-v2::unbind_key",
+                        LOG(LOG_ERROR, "gtk-v3::unbind_key",
                             "found number entry, but could not find actual key");
                     keybind_free(&kb);
                     save_keys();
@@ -1695,7 +1695,7 @@ void keyfunc(GtkWidget *widget, GdkEventKey *event, GtkWidget *window) {
                     break;
 
                 default:
-                    LOG(LOG_ERROR, "gtk-v2::keyfunc",
+                    LOG(LOG_ERROR, "gtk-v3::keyfunc",
                         "Unknown input state: %d", cpl.input_state);
             }
         }

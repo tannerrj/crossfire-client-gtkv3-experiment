@@ -442,21 +442,21 @@ void config_load() {
         if (theme != NULL) {
             g_free(theme);
         }
-        theme = g_key_file_get_string(config, "GTKv2", "theme", NULL);
+        theme = g_key_file_get_string(config, "GTKv3", "theme", NULL);
 
         if (face_info.want_faceset != NULL) {
             g_free(face_info.want_faceset);
         }
-        face_info.want_faceset = g_key_file_get_string(config, "GTKv2", "faceset", NULL);
+        face_info.want_faceset = g_key_file_get_string(config, "GTKv3", "faceset", NULL);
 
-        predict_alpha = g_key_file_get_integer(config, "GTKv2", "predict_alpha", NULL);
+        predict_alpha = g_key_file_get_integer(config, "GTKv3", "predict_alpha", NULL);
 
         if (last_server != NULL) {
             g_free(last_server);
         }
-        last_server = g_key_file_get_string(config, "GTKv2", "last_server", NULL);
+        last_server = g_key_file_get_string(config, "GTKv3", "last_server", NULL);
 
-        char *layout = g_key_file_get_string(config, "GTKv2", "window_layout", NULL);
+        char *layout = g_key_file_get_string(config, "GTKv3", "window_layout", NULL);
         g_strlcpy(window_xml_file, layout, sizeof(window_xml_file));
         free(layout);
     } else {
@@ -486,12 +486,12 @@ void config_load() {
 void save_defaults() {
     GError *error = NULL;
 
-    /* Save GTKv2 specific client settings. */
-    g_key_file_set_string(config, "GTKv2", "theme", theme);
-    g_key_file_set_string(config, "GTKv2", "faceset", face_info.want_faceset);
-    g_key_file_set_string(config, "GTKv2", "last_server", last_server);
-    g_key_file_set_integer(config, "GTKv2", "predict_alpha", predict_alpha);
-    g_key_file_set_string(config, "GTKv2", "window_layout", window_xml_file);
+    /* Save GTKv3 specific client settings. */
+    g_key_file_set_string(config, "GTKv3", "theme", theme);
+    g_key_file_set_string(config, "GTKv3", "faceset", face_info.want_faceset);
+    g_key_file_set_string(config, "GTKv3", "last_server", last_server);
+    g_key_file_set_integer(config, "GTKv3", "predict_alpha", predict_alpha);
+    g_key_file_set_string(config, "GTKv3", "window_layout", window_xml_file);
 
     /* Save the rest of the client settings. */
     for (int i = 1; i < CONFIG_NUMS; i++) {

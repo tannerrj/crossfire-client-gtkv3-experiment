@@ -694,7 +694,7 @@ static const GdkRGBA *get_row_color(item *it) {
 /***************************************************************************
  * Below are the actual guts for drawing the inventory and look windows.
  * Some quick notes:
- * 1) The gtk2 widgets (treeview/treemodel) seem noticably slower than the
+ * 1) The gtk3 widgets (treeview/treemodel) seem noticably slower than the
  *    older clist widgets in gtk1.  This is beyond the code below - just
  *    scrolling the window, which is all done internally by gtk, is
  *    quite slow.  Seems especially bad when using the scrollwheel.

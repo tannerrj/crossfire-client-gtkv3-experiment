@@ -12,7 +12,7 @@
  */
 
 /**
- * @file gtk-v2/src/metaserver.c
+ * @file gtk-v3/src/metaserver.c
  * Supports the client's metaserver dialog used to connect to available
  * servers.
  */

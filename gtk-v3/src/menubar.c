@@ -12,7 +12,7 @@
  */
 
 /**
- * @file gtk-v2/src/menubar.c
+ * @file gtk-v3/src/menubar.c
  * Sets up menu connections and implements core menu items in the top menubar.
  *
  * Quick notes on the menubar:
@@ -57,7 +57,7 @@ static void on_disconnect_activate(GtkMenuItem *menuitem, gpointer user_data) {
  */
 static void menu_quit_program(GtkMenuItem *menuitem, gpointer user_data) {
     script_killall();
-    LOG(LOG_INFO,"gtk-v2::client_exit","Exiting with return value 0.");
+    LOG(LOG_INFO,"gtk-v3::client_exit","Exiting with return value 0.");
     exit(0);
 }
 
