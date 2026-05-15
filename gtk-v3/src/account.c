@@ -607,7 +607,7 @@ static void init_choose_char_window() {
 
     add_tags_to_textbuffer(
         &login_pane[TEXTVIEW_RULES_CHAR], textbuf_rules_char);
-    add_style_to_textbuffer(&login_pane[TEXTVIEW_RULES_CHAR], NULL);
+    add_style_to_textbuffer(&login_pane[TEXTVIEW_RULES_CHAR]);
     gtk_text_buffer_get_end_iter(
         login_pane[TEXTVIEW_RULES_CHAR].textbuffer, &end);
     login_pane[TEXTVIEW_RULES_CHAR].textmark =
@@ -837,7 +837,7 @@ static void init_create_account_window() {
 
     add_tags_to_textbuffer(
         &login_pane[TEXTVIEW_RULES_ACCOUNT], textbuf_rules_account);
-    add_style_to_textbuffer(&login_pane[TEXTVIEW_RULES_ACCOUNT], NULL);
+    add_style_to_textbuffer(&login_pane[TEXTVIEW_RULES_ACCOUNT]);
     gtk_text_buffer_get_end_iter(
         login_pane[TEXTVIEW_RULES_ACCOUNT].textbuffer, &end);
     login_pane[TEXTVIEW_RULES_ACCOUNT].textmark =
@@ -978,7 +978,7 @@ static void init_login_window() {
             GTK_TEXT_VIEW(login_pane[TEXTVIEW_MOTD].textview));
 
     add_tags_to_textbuffer(&login_pane[TEXTVIEW_MOTD], textbuf_motd);
-    add_style_to_textbuffer(&login_pane[TEXTVIEW_MOTD], NULL);
+    add_style_to_textbuffer(&login_pane[TEXTVIEW_MOTD]);
     gtk_text_buffer_get_end_iter(login_pane[TEXTVIEW_MOTD].textbuffer, &end);
     login_pane[TEXTVIEW_MOTD].textmark =
         gtk_text_buffer_create_mark(
@@ -992,7 +992,7 @@ static void init_login_window() {
             GTK_TEXT_VIEW(login_pane[TEXTVIEW_NEWS].textview));
 
     add_tags_to_textbuffer(&login_pane[TEXTVIEW_NEWS], textbuf_news);
-    add_style_to_textbuffer(&login_pane[TEXTVIEW_NEWS], NULL);
+    add_style_to_textbuffer(&login_pane[TEXTVIEW_NEWS]);
     gtk_text_buffer_get_end_iter(login_pane[TEXTVIEW_NEWS].textbuffer, &end);
     login_pane[TEXTVIEW_NEWS].textmark =
         gtk_text_buffer_create_mark(

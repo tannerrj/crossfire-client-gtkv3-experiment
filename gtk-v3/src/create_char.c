@@ -877,7 +877,7 @@ void init_create_character_window() {
     textbuf_starting_map = gtk_text_view_get_buffer(
                                GTK_TEXT_VIEW(create_char_pane[STARTING_MAP_PANE].textview));
     add_tags_to_textbuffer(&create_char_pane[STARTING_MAP_PANE], textbuf_starting_map);
-    add_style_to_textbuffer(&create_char_pane[STARTING_MAP_PANE], NULL);
+    add_style_to_textbuffer(&create_char_pane[STARTING_MAP_PANE]);
 
     gtk_text_buffer_get_end_iter(create_char_pane[STARTING_MAP_PANE].textbuffer, &iter);
     create_char_pane[STARTING_MAP_PANE].textmark = gtk_text_buffer_create_mark(
