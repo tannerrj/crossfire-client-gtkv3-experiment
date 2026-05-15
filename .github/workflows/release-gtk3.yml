@@ -1,0 +1,185 @@
+name: GTK3 Client Release
+
+# Runs only when a version tag is pushed (e.g. v1.75.5).
+# Pipeline: build & test → package DEB (Ubuntu) + package RPM (Fedora) → publish GitHub Release.
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write   # required to create GitHub Releases
+
+jobs:
+  # ── 1. Build and test ────────────────────────────────────────────────────
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            cmake \
+            pkg-config \
+            perl \
+            valac \
+            libgtk-3-dev \
+            libglib2.0-dev-bin \
+            libpng-dev \
+            libcurl4-openssl-dev \
+            libsdl2-mixer-dev \
+            libx11-dev
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGTK_VERSION=3 \
+            -DMETASERVER2=ON \
+            -DSOUND=ON \
+            -DLUA=OFF
+
+      - name: Build
+        run: cmake --build build --target crossfire-client-gtk3 --parallel $(nproc)
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure --timeout 30
+
+  # ── 2a. Build .deb package (Debian/Ubuntu) ───────────────────────────────
+  package-deb:
+    name: Package DEB
+    needs: build-and-test
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            cmake \
+            pkg-config \
+            perl \
+            valac \
+            libgtk-3-dev \
+            libglib2.0-dev-bin \
+            libpng-dev \
+            libcurl4-openssl-dev \
+            libsdl2-mixer-dev \
+            libx11-dev \
+            dpkg-dev
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGTK_VERSION=3 \
+            -DMETASERVER2=ON \
+            -DSOUND=ON \
+            -DLUA=OFF
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Package (.deb)
+        working-directory: build
+        run: cpack -G DEB
+
+      - name: Upload DEB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-package
+          path: build/*.deb
+          retention-days: 7
+
+  # ── 2b. Build .rpm package (Fedora) ─────────────────────────────────────
+  package-rpm:
+    name: Package RPM
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:40
+
+    steps:
+      - name: Install git
+        run: dnf install -y git
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          dnf install -y \
+            cmake \
+            gcc \
+            pkg-config \
+            perl \
+            vala \
+            gtk3-devel \
+            glib2-devel \
+            libpng-devel \
+            libcurl-devel \
+            SDL2_mixer-devel \
+            libX11-devel \
+            rpm-build
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGTK_VERSION=3 \
+            -DMETASERVER2=ON \
+            -DSOUND=ON \
+            -DLUA=OFF
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Package (.rpm)
+        working-directory: build
+        run: cpack -G RPM
+
+      - name: Upload RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-package
+          path: build/*.rpm
+          retention-days: 7
+
+  # ── 3. Publish GitHub Release ────────────────────────────────────────────
+  release:
+    name: Publish Release
+    needs: [package-deb, package-rpm]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download DEB
+        uses: actions/download-artifact@v4
+        with:
+          name: deb-package
+          path: dist/
+
+      - name: Download RPM
+        uses: actions/download-artifact@v4
+        with:
+          name: rpm-package
+          path: dist/
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --title "Crossfire GTK3 Client ${{ github.ref_name }}" \
+            --generate-notes \
+            dist/*.deb \
+            dist/*.rpm

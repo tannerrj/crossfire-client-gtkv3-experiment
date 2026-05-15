@@ -138,12 +138,45 @@ endif()
 
 enable_testing()
 
-# Build an installation package.
+# -- CPack packaging (binary: DEB/RPM/ZIP, source: TGZ) -------------------
 include(InstallRequiredSystemLibraries)
+
+set(CPACK_PACKAGE_NAME              "crossfire-client")
+set(CPACK_PACKAGE_VENDOR            "Crossfire Development Team")
+set(CPACK_PACKAGE_VERSION           "${VERSION}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+    "GTK3 client for the Crossfire multiplayer online RPG")
+set(CPACK_PACKAGE_HOMEPAGE_URL      "https://crossfire.real-time.com")
+set(CPACK_PACKAGE_CONTACT           "crossfire@metalforge.org")
+set(CPACK_RESOURCE_FILE_LICENSE     "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
+
+# Default generator; overridden with -G on the cpack command line.
 set(CPACK_GENERATOR "ZIP")
-set(CPACK_PACKAGE_VERSION "${VERSION}")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
-set(CPACK_SOURCE_GENERATOR "TGZ")
-set(CPACK_SOURCE_IGNORE_FILES "/build/;.git/;.svn/")
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "crossfire-client-${CPACK_PACKAGE_VERSION}")
+
+# Source archive settings.
+set(CPACK_SOURCE_GENERATOR          "TGZ")
+set(CPACK_SOURCE_IGNORE_FILES       "/build/;/.git/;/.svn/")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME  "crossfire-client-${VERSION}")
+
+# -- Debian/Ubuntu (.deb) --------------------------------------------------
+set(CPACK_DEBIAN_FILE_NAME          "DEB-DEFAULT")
+set(CPACK_DEBIAN_PACKAGE_SECTION    "games")
+set(CPACK_DEBIAN_PACKAGE_PRIORITY   "optional")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Crossfire Development Team <crossfire@metalforge.org>")
+set(CPACK_DEBIAN_PACKAGE_HOMEPAGE   "https://crossfire.real-time.com")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS
+    "libgtk-3-0, libglib2.0-0, libpng16-16, libcurl4, libsdl2-mixer-2.0-0, libx11-6")
+set(CPACK_DEBIAN_PACKAGE_DESCRIPTION
+    "GTK3 client for the Crossfire multiplayer online RPG\n"
+    " Crossfire is a free, open-source cooperative multi-player graphical\n"
+    " RPG and adventure game. This package provides the GTK3 client.")
+
+# -- RPM (Fedora / openSUSE / RHEL) (.rpm) ---------------------------------
+set(CPACK_RPM_FILE_NAME             "RPM-DEFAULT")
+set(CPACK_RPM_PACKAGE_GROUP         "Amusements/Games")
+set(CPACK_RPM_PACKAGE_LICENSE       "GPL-2.0-or-later")
+set(CPACK_RPM_PACKAGE_URL           "https://crossfire.real-time.com")
+set(CPACK_RPM_PACKAGE_SUMMARY       "GTK3 client for the Crossfire multiplayer online RPG")
+set(CPACK_RPM_PACKAGE_REQUIRES      "gtk3, glib2, libpng, libcurl, SDL2_mixer, libX11")
+
 include(CPack)
