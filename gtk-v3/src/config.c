@@ -154,21 +154,22 @@ void load_theme(int reload) {
 
     /* GTK3 port: only load theme files that are CSS (.css suffix).
      * The bundled GTK2 RC theme files (themes/Standard, themes/Black) are
-     * not CSS and would fail to parse.  Skip them silently so the client
-     * falls back to the system GTK3 theme instead of spamming errors. */
+     * not CSS and would fail to parse.  Skip the CSS load for non-CSS files
+     * but still notify subsystems so color tags are refreshed. */
     const char *suffix = strrchr(theme, '.');
-    if (!suffix || strcmp(suffix, ".css") != 0) {
+    if (suffix && strcmp(suffix, ".css") == 0) {
+        /* Load the selected theme CSS at USER priority. */
+        theme_css_provider = load_css_file(theme_css_provider, theme,
+                                           GTK_STYLE_PROVIDER_PRIORITY_USER);
+    } else {
         LOG(LOG_DEBUG, "load_theme",
             "Skipping non-CSS theme file '%s'; use a .css file for GTK3 theming",
             theme);
-        return;
     }
 
-    /* Load the selected theme CSS at USER priority. */
-    theme_css_provider = load_css_file(theme_css_provider, theme,
-                                       GTK_STYLE_PROVIDER_PRIORITY_USER);
-
-    /* Notify subsystems that style information may have changed. */
+    /* Notify subsystems that style information may have changed.
+     * Called regardless of whether a CSS file was loaded so that color tags
+     * are always refreshed from root_color[] on theme reload. */
     info_get_styles();
     inventory_get_styles();
     stats_get_styles();
