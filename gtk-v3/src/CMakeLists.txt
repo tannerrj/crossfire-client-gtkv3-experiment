@@ -1,5 +1,7 @@
-# GTK v2 client source build.
-# Compiles all GTK2-specific source files into the crossfire-client-gtk2 executable.
+# GTK v3 client source build.
+# Compiles all GTK3-specific source files into the crossfire-client-gtk3 executable.
+# Uses gtk+-3.0 libraries; GTK2-specific APIs have been replaced with GTK3 equivalents.
+# Cross-platform: X11 dependency is conditional (not present on Windows/macOS).
 
 vala_precompile(VALA_C snd.vala OPTIONS -g GENERATE_HEADER client-vala)
 
@@ -12,12 +14,12 @@ add_custom_command(
         ${PROJECT_SOURCE_DIR}/resources.xml
 )
 
-add_executable(crossfire-client-gtk2
+add_executable(crossfire-client-gtk3
     ${VALA_C}
     account.c
     config.c
     create_char.c
-    gtk2proto.h
+    gtk3proto.h
     image.c
     image.h
     info.c
@@ -41,21 +43,21 @@ add_executable(crossfire-client-gtk2
     resources.c
 )
 
-# Use GTK2 include dirs when building the GTK2 client.
-target_include_directories(crossfire-client-gtk2
+# Use GTK3 include dirs when building the GTK3 client.
+target_include_directories(crossfire-client-gtk3
     PRIVATE ${PROJECT_BINARY_DIR}
             ${PROJECT_BINARY_DIR}/common
             ${PROJECT_SOURCE_DIR}/common
-            ${GTK2_INCLUDE_DIRS}
+            ${GTK3_INCLUDE_DIRS}
             ${PNG_INCLUDE_DIRS}
             ${SDLMIXER_INCLUDE_DIRS}
             ${SDL_INCLUDE_DIR}
 )
 
-# Link against GTK2 libraries; X11 is optional (not available on Windows/macOS).
-target_link_libraries(crossfire-client-gtk2 cfclient
+# Link against GTK3 libraries; X11 is optional (not available on Windows/macOS).
+target_link_libraries(crossfire-client-gtk3 cfclient
     ${CURL_LDFLAGS}
-    ${GTK2_LDFLAGS}
+    ${GTK3_LDFLAGS}
     ${LUA_LIBRARIES}
     ${PNG_LIBRARIES}
     ${SDL_LDFLAGS}
@@ -65,7 +67,7 @@ target_link_libraries(crossfire-client-gtk2 cfclient
 )
 
 if(MINGW OR WIN32)
-    target_link_libraries(crossfire-client-gtk2 wsock32)
+    target_link_libraries(crossfire-client-gtk3 wsock32)
 endif()
 
-install(TARGETS crossfire-client-gtk2 DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS crossfire-client-gtk3 DESTINATION ${CMAKE_INSTALL_BINDIR})

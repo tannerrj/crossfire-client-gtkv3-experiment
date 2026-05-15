@@ -1,5 +1,5 @@
-# GTK v2 client subdirectory.
-# Installs themes, UI files, and the desktop entry for the GTK2 client.
+# GTK v3 client subdirectory.
+# Installs themes, UI files, and the desktop entry for the GTK3 client.
 add_subdirectory(src)
 
 install(DIRECTORY themes ui DESTINATION ${CMAKE_INSTALL_DATADIR})
