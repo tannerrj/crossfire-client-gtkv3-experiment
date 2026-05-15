@@ -87,11 +87,11 @@ Section "Menu and Desktop Shortcuts" menus
   ;Add Shortcuts
   SetOutPath $INSTDIR
   CreateDirectory "$SMPROGRAMS\Crossfire Client"
-  CreateShortCut "$SMPROGRAMS\Crossfire Client\Crossfire Client.lnk" "$INSTDIR\crossfire-client-gtk2.exe" "" "$INSTDIR\client.ico" 0
+  CreateShortCut "$SMPROGRAMS\Crossfire Client\Crossfire Client.lnk" "$INSTDIR\crossfire-client-gtk3.exe" "" "$INSTDIR\client.ico" 0
   CreateShortCut "$SMPROGRAMS\Crossfire Client\Uninstall.lnk" "$INSTDIR\uninst.exe" "" "$INSTDIR\uninst.exe" 0
 
   SetShellVarContext all
-  CreateShortcut "$desktop\Crossfire Client.lnk" "$INSTDIR\crossfire-client-gtk2.exe" "" "$INSTDIR\client.ico" 0
+  CreateShortcut "$desktop\Crossfire Client.lnk" "$INSTDIR\crossfire-client-gtk3.exe" "" "$INSTDIR\client.ico" 0
 SectionEnd
 
 UninstallText "This will uninstall Crossfire Client from your system"

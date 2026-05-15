@@ -1,0 +1,88 @@
+name: GTK3 Client Windows Build
+
+# Runs on every push and pull request that touches relevant source files on
+# this branch.  Validates that the GTK3 client compiles and passes the
+# metaserver unit test under MSYS2/MinGW on Windows.
+
+on:
+  push:
+    branches:
+      - crossfire-client-gtkv3-windows-experiment
+    paths:
+      - "gtk-v3/**"
+      - "common/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - "config.h.in"
+      - "buildconfig.h.in"
+      - "resources.xml"
+      - ".github/workflows/build-windows-gtk3.yml"
+  pull_request:
+    branches:
+      - crossfire-client-gtkv3-windows-experiment
+    paths:
+      - "gtk-v3/**"
+      - "common/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - "config.h.in"
+      - "buildconfig.h.in"
+      - "resources.xml"
+      - ".github/workflows/build-windows-gtk3.yml"
+
+jobs:
+  build:
+    name: Build & Test (Windows / MSYS2 MinGW64)
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # msys2/setup-msys2 installs MSYS2 and the requested MinGW64 packages.
+      # update:true keeps the package database current so packages resolve.
+      - name: Set up MSYS2 / MinGW64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-perl
+            mingw-w64-x86_64-vala
+            mingw-w64-x86_64-gtk3
+            mingw-w64-x86_64-libpng
+            mingw-w64-x86_64-curl
+            mingw-w64-x86_64-SDL2_mixer
+
+      - name: Configure (GTK3 only, MinGW Makefiles)
+        run: |
+          cmake -B build \
+            -G "MinGW Makefiles" \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DGTK_VERSION=3 \
+            -DMETASERVER2=ON \
+            -DSOUND=ON \
+            -DLUA=OFF
+
+      - name: Build
+        # Build all targets so test-metaserver is also compiled for ctest.
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure --timeout 30
+
+      - name: Upload binary (debug artifact)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crossfire-client-gtk3-windows-debug
+          path: build/gtk-v3/src/crossfire-client-gtk3.exe
+          retention-days: 7

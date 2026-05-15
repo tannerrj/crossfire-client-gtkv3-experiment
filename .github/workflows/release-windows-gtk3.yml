@@ -1,0 +1,177 @@
+name: GTK3 Client Windows Release
+
+# Triggered by tags of the form win-v*.*.* (e.g. win-v1.75.5).
+# Using a separate tag prefix keeps Windows and Linux release tracks independent.
+#
+# Pipeline:
+#   1. build-and-test  — compile + ctest (gate; nothing continues if this fails)
+#   2. package-exe     — bundle DLLs + GTK3 runtime, build NSIS installer
+#   3. release         — publish a GitHub Release and attach the installer
+
+on:
+  push:
+    tags:
+      - "win-v*.*.*"
+
+permissions:
+  contents: write   # required to create GitHub Releases
+
+jobs:
+  # ── 1. Build and test ───────────────────────────────────────────────────────
+  build-and-test:
+    name: Build & Test
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2 / MinGW64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-perl
+            mingw-w64-x86_64-vala
+            mingw-w64-x86_64-gtk3
+            mingw-w64-x86_64-libpng
+            mingw-w64-x86_64-curl
+            mingw-w64-x86_64-SDL2_mixer
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -G "MinGW Makefiles" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGTK_VERSION=3 \
+            -DMETASERVER2=ON \
+            -DSOUND=ON \
+            -DLUA=OFF
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure --timeout 30
+
+  # ── 2. Package .exe installer ────────────────────────────────────────────────
+  package-exe:
+    name: Package Windows Installer
+    needs: build-and-test
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2 / MinGW64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-perl
+            mingw-w64-x86_64-vala
+            mingw-w64-x86_64-gtk3
+            mingw-w64-x86_64-libpng
+            mingw-w64-x86_64-curl
+            mingw-w64-x86_64-SDL2_mixer
+            mingw-w64-x86_64-nsis
+
+      - name: Configure (Release)
+        run: |
+          cmake -B build \
+            -G "MinGW Makefiles" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=dist \
+            -DGTK_VERSION=3 \
+            -DMETASERVER2=ON \
+            -DSOUND=ON \
+            -DLUA=OFF
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Install client data files
+        # Installs themes/, ui/, desktop file, icons, and the binary into dist/
+        run: cmake --install build
+
+      - name: Bundle DLLs and GTK3 runtime
+        run: |
+          chmod +x gtk-v3/win32/bundle-dlls.sh
+          ./gtk-v3/win32/bundle-dlls.sh \
+            dist/bin/crossfire-client-gtk3.exe \
+            package/
+
+          # Copy the rest of the installed data (themes, ui, icons, desktop)
+          cp -r dist/share package/share 2>/dev/null || true
+
+      - name: Extract version from tag
+        id: version
+        # Tag is win-v1.75.5; strip the "win-v" prefix for NSIS /DVERSION
+        run: echo "ver=${GITHUB_REF_NAME#win-v}" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Build NSIS installer
+        run: |
+          TAG="${{ github.ref_name }}"
+          VER="${{ steps.version.outputs.ver }}"
+          # NSIS expects a four-part numerical version (x.x.x.x)
+          NSIS_VER="${VER}.0"
+          OUTDIR="$(pwd)/installer"
+          mkdir -p "$OUTDIR"
+
+          makensis \
+            /NOCD \
+            "/DVERSION=${NSIS_VER}" \
+            "/DGITVERSION=${TAG}" \
+            "/DINPUTDIR=$(pwd)/package" \
+            "/DSOURCELOCATION=$(pwd)" \
+            "/DOUTPUTDIR=${OUTDIR}" \
+            gtk-v3/win32/client.nsi
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: installer/*.exe
+          retention-days: 14
+
+  # ── 3. Publish GitHub Release ──────────────────────────────────────────────
+  release:
+    name: Publish Release
+    needs: package-exe
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --title "Crossfire GTK3 Client ${{ github.ref_name }} (Windows)" \
+            --generate-notes \
+            dist/*.exe
