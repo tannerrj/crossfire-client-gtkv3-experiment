@@ -49,25 +49,28 @@ static const char *Style_Names[Style_Last] = {
 static gpointer description_renderer = NULL; /**< The cell renderer for the
                                               *   spell dialog descriptions.
                                               */
-/* GTK3 port: spell_styles are unused stubs; all entries remain NULL. */
-static void *spell_styles[Style_Last];
+/* Per-state background colors loaded from the theme file.
+ * Indexed by Style_* enum.  Populated by spell_get_styles(). */
+static GdkRGBA  spell_colors[Style_Last];
+static gboolean spell_color_set[Style_Last];
 static int has_init = 0;                     /**< Whether or not the spell
                                               *   dialog initialized since
                                               *   the client started up.
                                               */
 /**
- * Reloads spell row color styles.
+ * Reload spell row colors from the parsed theme file.
  *
- * GTK3 port: gtk_rc_get_style_by_paths() was removed in GTK3.  Spell row
- * coloring is now intended to be driven by CSS via GtkCssProvider (see
- * config.c::init_theme()).  This function is kept as a no-op stub so that
- * callers (config.c::load_theme()) do not need to change.
+ * The theme file uses widget_class entries named "spell_attuned",
+ * "spell_repelled", "spell_denied", and "spell_normal" with base[NORMAL]
+ * color values.  Results are stored in spell_colors[] / spell_color_set[]
+ * which update_spell_information() reads when building each spell row.
  */
 void spell_get_styles(void)
 {
     int i;
     for (i = 0; i < Style_Last; i++) {
-        spell_styles[i] = NULL;
+        spell_color_set[i] = theme_lookup_rgba(Style_Names[i], "base_normal",
+                                               &spell_colors[i]);
     }
 }
 
@@ -207,10 +210,19 @@ void update_spell_information(void)
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
                      "%d Grace", spell->grace);
 
-        /* GTK3 port: spell_styles are NULL stubs; row colors default to CSS. */
+        /* Determine row color from player path attuned/repelled/denied flags
+         * and the spell's own path bitmask.  Style_Names[] order:
+         * attuned=0, repelled=1, denied=2, normal=3. */
         foreground = NULL;
         background = NULL;
         font = NULL;
+
+        int style_idx = 3; /* spell_normal */
+        if (spell->path & cpl.stats.denied)   style_idx = 2; /* spell_denied   */
+        else if (spell->path & cpl.stats.repelled) style_idx = 1; /* spell_repelled */
+        else if (spell->path & cpl.stats.attuned)  style_idx = 0; /* spell_attuned  */
+
+        if (spell_color_set[style_idx]) background = &spell_colors[style_idx];
 
         gtk_list_store_set(
             spell_store, &iter,

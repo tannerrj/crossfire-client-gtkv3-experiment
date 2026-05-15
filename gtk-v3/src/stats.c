@@ -101,21 +101,17 @@ static gboolean need_mapping_update;
 static int lastval[MAX_STAT_BARS], lastmax[MAX_STAT_BARS];
 
 /**
- * Gets the style information for the stat bars.
+ * Reload stat-bar colors from the parsed theme file.
  *
- * GTK3 port: the GTK2 version used gtk_rc_get_style_by_paths() to look up
- * GtkStyle objects by name (e.g. "hp_bar_normal") and copied the
- * GdkColor from style->base[GTK_STATE_SELECTED].  In GTK3 neither GtkStyle
- * nor gtk_rc_get_style_by_paths() exist.
- *
- * This function now frees any existing color overrides and leaves bar_colors
- * entries as NULL, causing update_stat() to fall back to the default GTK3
- * theme colors.  To color stat bars in GTK3 define named CSS classes in the
- * client theme file and apply them per-bar.
+ * The theme file binds widget class names of the form "{stat}_{style}"
+ * (e.g. "hp_bar_normal", "sp_gradual_bar_low") to styles whose
+ * base[SELECTED] value holds the desired bar color.  These map directly to
+ * bar_colors[stat_bar][sub_style], which update_stat() then applies via
+ * gtk_widget_override_background_color().
  */
 void stats_get_styles(void)
 {
-    int stat_bar, sub_style;
+    int stat_bar_i, sub_style;
     static int has_init = 0;
 
     if (!has_init) {
@@ -123,12 +119,19 @@ void stats_get_styles(void)
         has_init = 1;
     }
 
-    /* GTK3: free any previously allocated colors (RC-based system removed). */
-    for (stat_bar = 0; stat_bar < MAX_STAT_BARS; stat_bar++) {
+    for (stat_bar_i = 0; stat_bar_i < MAX_STAT_BARS; stat_bar_i++) {
         for (sub_style = 0; sub_style < NUM_STYLES; sub_style++) {
-            if (bar_colors[stat_bar][sub_style]) {
-                g_free(bar_colors[stat_bar][sub_style]);
-                bar_colors[stat_bar][sub_style] = NULL;
+            g_free(bar_colors[stat_bar_i][sub_style]);
+            bar_colors[stat_bar_i][sub_style] = NULL;
+
+            char widget_name[64];
+            snprintf(widget_name, sizeof(widget_name), "%s_%s",
+                     stat_bar_names[stat_bar_i], stat_style_names[sub_style]);
+
+            GdkRGBA color;
+            if (theme_lookup_rgba(widget_name, "base_selected", &color)) {
+                bar_colors[stat_bar_i][sub_style] = g_new(GdkRGBA, 1);
+                *bar_colors[stat_bar_i][sub_style] = color;
             }
         }
     }

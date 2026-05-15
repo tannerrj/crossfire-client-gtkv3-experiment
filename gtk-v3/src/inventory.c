@@ -26,12 +26,11 @@
 
 GtkWidget *treeview_look;
 
-/**
- * Color indicating that an item is applied.
- * GTK3: uses GdkRGBA with channels in [0,1] instead of GTK2 GdkColor
- * which used guint16 channels in [0,65535] (50000/65535 ≈ 0.763).
- */
-static const GdkRGBA applied_color = {0.763, 0.763, 0.763, 1.0};
+/* Per-state background colors and fonts loaded from the theme file.
+ * Indexed by the Style_* enum below.  Populated by inventory_get_styles(). */
+static GdkRGBA           inv_colors[5];   /* Style_Last = 5 */
+static gboolean          inv_color_set[5];
+static PangoFontDescription *inv_fonts[5];
 
 static GtkTreeStore *store_look;
 static GtkWidget *encumbrance_current;
@@ -61,8 +60,7 @@ static const char *Style_Names[Style_Last] = {
     "inv_magical", "inv_cursed", "inv_unpaid", "inv_locked", "inv_applied"
 };
 
-/* GTK3: GtkStyle is removed; inv_styles are unused stubs. */
-static void *inv_styles[Style_Last]; /* kept for API compatibility; always NULL */
+/* (inv_colors / inv_color_set / inv_fonts declared above) */
 
 /*
  * The basic idea of the NoteBook_Info structure is to hold everything we need
@@ -485,20 +483,27 @@ static void setup_list_columns(GtkWidget *treeview) {
 }
 
 /**
- * Reload inventory row style overrides.
+ * Reload inventory row colors and fonts from the parsed theme file.
  *
- * GTK3 port: the GTK2 version used gtk_rc_get_style_by_paths() to look up
- * named GtkStyle objects (inv_magical, inv_cursed, etc.).  In GTK3 that API
- * is removed.  Row coloring is now achieved by setting the "foreground-rgba"
- * and "background-rgba" properties on GtkCellRendererText columns (see
- * setup_list_columns() below).  This function is kept as a no-op stub so
- * callers (config.c::load_theme()) can still invoke it without changes.
+ * The theme file uses widget_class entries named "inv_magical", "inv_cursed",
+ * "inv_unpaid", "inv_locked", and "inv_applied".  Colors come from
+ * base[NORMAL] and fonts from font_name.  Results are stored in inv_colors[],
+ * inv_color_set[], and inv_fonts[] which get_row_color() reads per-item.
  */
 void inventory_get_styles() {
-    /* GTK3: RC-based style lookup removed; inv_styles remain NULL. */
     int i;
     for (i = 0; i < Style_Last; i++) {
-        inv_styles[i] = NULL;
+        inv_color_set[i] = theme_lookup_rgba(Style_Names[i], "base_normal",
+                                             &inv_colors[i]);
+        if (inv_fonts[i]) {
+            pango_font_description_free(inv_fonts[i]);
+            inv_fonts[i] = NULL;
+        }
+        gchar *font_str = theme_lookup_font(Style_Names[i]);
+        if (font_str) {
+            inv_fonts[i] = pango_font_description_from_string(font_str);
+            g_free(font_str);
+        }
     }
 }
 
@@ -677,16 +682,28 @@ void set_weight_limit(guint32 wlim) {
 }
 
 /**
- * Returns a GdkRGBA background color for a row based on item state, or NULL
- * for the default color.  GTK3 port: inv_styles are all NULL since RC-based
- * theming was removed; only the built-in applied_color is returned.
+ * Return the theme background color and font for a row based on item state.
  *
- * @param it Item to inspect.
- * @return Pointer to a static GdkRGBA, or NULL for no override.
+ * Precedence (highest first): unpaid > cursed/damned > magical > applied > locked.
+ * Colors and fonts come from the parsed theme file via inv_colors[] / inv_fonts[].
+ *
+ * @param it        Item to inspect.
+ * @param font_out  Receives a borrowed PangoFontDescription*, or NULL.
+ * @return Pointer to a static GdkRGBA background color, or NULL for default.
  */
-static const GdkRGBA *get_row_color(item *it) {
-    if (it->applied) {
-        return &applied_color;
+static const GdkRGBA *get_row_color(item *it, PangoFontDescription **font_out) {
+    if (font_out) *font_out = NULL;
+
+    int idx = -1;
+    if (it->unpaid)                  idx = Style_Unpaid;
+    else if (it->cursed || it->damned) idx = Style_Cursed;
+    else if (it->magical)            idx = Style_Magical;
+    else if (it->applied)            idx = Style_Applied;
+    else if (it->locked)             idx = Style_Locked;
+
+    if (idx >= 0) {
+        if (font_out && inv_fonts[idx]) *font_out = inv_fonts[idx];
+        if (inv_color_set[idx]) return &inv_colors[idx];
     }
     return NULL;
 }
@@ -782,7 +799,7 @@ static void add_object_to_store(item *it, GtkTreeStore *store,
     }
     snprintf(buf1, 255, "%s %s", it->d_name, it->flags);
     if (color) {
-        background = get_row_color(it);
+        background = get_row_color(it, &font);
     }
 
     gtk_tree_store_append(store, new, parent);
@@ -1064,13 +1081,12 @@ static void draw_inv_table(int animate) {
             /* Queue a redraw; actual painting happens in the draw callback. */
             gtk_widget_queue_draw(INV_TABLE_AT(x, y, columns));
 
-            /* GTK3: gtk_widget_override_background_color replaces gtk_widget_modify_bg. */
-            if (tmp->applied) {
+            /* Apply the theme background color to the icon cell. */
+            {
+                PangoFontDescription *unused = NULL;
+                const GdkRGBA *bg = get_row_color(tmp, &unused);
                 gtk_widget_override_background_color(INV_TABLE_AT(x, y, columns),
-                        GTK_STATE_FLAG_NORMAL, &applied_color);
-            } else {
-                gtk_widget_override_background_color(INV_TABLE_AT(x, y, columns),
-                        GTK_STATE_FLAG_NORMAL, NULL);
+                        GTK_STATE_FLAG_NORMAL, bg);
             }
 
             gtk_widget_show(INV_TABLE_AT(x, y, columns));

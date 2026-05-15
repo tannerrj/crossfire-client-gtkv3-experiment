@@ -53,7 +53,7 @@ extern void start_login(int method);
 extern void choose_char_window_show();
 extern void account_show_login(void);
 
-/* config.c -- Client configuration dialog and CSS-based theming (GTK3). */
+/* config.c -- Client configuration dialog, CSS theming, and RC theme parser. */
 extern void load_theme(int reload);
 extern void config_check();
 extern void config_load(void);
@@ -64,6 +64,10 @@ extern void save_winpos(void);
 extern void on_save_window_position_activate(GtkMenuItem *menuitem, gpointer user_data);
 extern void load_window_positions(GtkWidget *window_root);
 extern void init_theme();
+/* RC-style theme color/font lookup (populated by load_theme via parse_theme_file). */
+extern gboolean theme_lookup_rgba(const char *widget_name, const char *property,
+                                  GdkRGBA *out);
+extern gchar   *theme_lookup_font(const char *widget_name);
 
 /* create_char.c -- Character creation dialog. */
 extern void create_character_window_show();

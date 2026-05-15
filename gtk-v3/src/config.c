@@ -76,10 +76,176 @@ static char *ui_name() {
  * installed on the default GdkScreen.  Player-specific overrides use files
  * named "gtk3.css" and "<layout>.gtk3.css" inside the config_dir directory.
  * The client theme file (if selected) is loaded last so it takes priority.
+ *
+ * Legacy GTK2 RC theme files (themes/Standard, themes/Black) are also
+ * supported: parse_theme_file() reads the RC format and populates
+ * theme_widget_map so that stats_get_styles(), inventory_get_styles(), and
+ * spell_get_styles() can retrieve per-widget colors and fonts via
+ * theme_lookup_rgba() / theme_lookup_font().
  */
 static GtkCssProvider *client_css_provider = NULL;
 static GtkCssProvider *layout_css_provider = NULL;
 static GtkCssProvider *theme_css_provider = NULL;
+
+/* ── RC-style theme file parser ──────────────────────────────────────── */
+
+typedef struct {
+    char *base_selected; /* base[SELECTED] — used by stat bars              */
+    char *base_normal;   /* base[NORMAL]   — used by inventory/spell rows   */
+    char *fg_normal;     /* fg[NORMAL]     — used by info text colors        */
+    char *font_name;     /* font_name      — used by inventory/info fonts    */
+} ThemeStyle;
+
+static GHashTable *theme_style_map  = NULL; /* style_name -> ThemeStyle*        */
+static GHashTable *theme_widget_map = NULL; /* widget_name -> ThemeStyle* (borrow) */
+
+static void free_theme_style(ThemeStyle *s) {
+    g_free(s->base_selected);
+    g_free(s->base_normal);
+    g_free(s->fg_normal);
+    g_free(s->font_name);
+    g_free(s);
+}
+
+/* Remove '#' comments that appear outside of double-quoted strings. */
+static void strip_comment(char *line) {
+    int in_string = 0;
+    for (char *p = line; *p; p++) {
+        if (*p == '"')  in_string = !in_string;
+        else if (*p == '#' && !in_string) { *p = '\0'; break; }
+    }
+}
+
+/* Return a g_strdup copy of the first double-quoted value in @p s, or NULL. */
+static char *extract_quoted(const char *s) {
+    const char *a = strchr(s, '"');
+    if (!a) return NULL;
+    a++;
+    const char *b = strchr(a, '"');
+    if (!b) return NULL;
+    return g_strndup(a, b - a);
+}
+
+/* Free and rebuild the two hash tables used for theme lookups. */
+static void theme_clear(void) {
+    if (theme_widget_map) { g_hash_table_destroy(theme_widget_map); theme_widget_map = NULL; }
+    if (theme_style_map)  { g_hash_table_destroy(theme_style_map);  theme_style_map  = NULL; }
+}
+
+/**
+ * Parse a GTK2 RC-subset theme file and populate theme_style_map /
+ * theme_widget_map.  Handles the style/widget_class/widget grammar used by
+ * the bundled Crossfire themes (Standard, Black).  Unknown lines are ignored.
+ */
+static void parse_theme_file(const char *path) {
+    FILE *fp = fopen(path, "r");
+    if (!fp) {
+        LOG(LOG_ERROR, "parse_theme_file", "Cannot open theme file: %s", path);
+        return;
+    }
+
+    theme_style_map  = g_hash_table_new_full(g_str_hash, g_str_equal,
+                                              g_free, (GDestroyNotify)free_theme_style);
+    theme_widget_map = g_hash_table_new_full(g_str_hash, g_str_equal,
+                                              g_free, NULL); /* values borrowed */
+
+    char line[1024];
+    ThemeStyle *current = NULL;
+
+    while (fgets(line, sizeof(line), fp)) {
+        strip_comment(line);
+        g_strstrip(line);
+        if (!line[0]) continue;
+
+        if (g_str_has_prefix(line, "style ")) {
+            char *name = extract_quoted(line + 5);
+            if (!name) continue;
+            current = g_new0(ThemeStyle, 1);
+            g_hash_table_insert(theme_style_map, name, current);
+
+        } else if (g_str_has_prefix(line, "widget_class ") ||
+                   g_str_has_prefix(line, "widget ")) {
+            /* widget_class "wname" style "sname"
+             * Extract widget name (first quoted string) then style name
+             * (second quoted string, after the closing " of wname).       */
+            int off = g_str_has_prefix(line, "widget_class ") ? 13 : 7;
+            char *wname = extract_quoted(line + off);
+            if (!wname) continue;
+
+            const char *p = strchr(line + off, '"');        /* opening " of wname */
+            if (p) p = strchr(p + 1, '"');                  /* closing " of wname */
+            if (p) p++;                                      /* char after closing " */
+            char *sname = p ? extract_quoted(p) : NULL;
+
+            if (sname) {
+                ThemeStyle *style = g_hash_table_lookup(theme_style_map, sname);
+                if (style) {
+                    g_hash_table_insert(theme_widget_map, wname, style);
+                    wname = NULL; /* ownership transferred */
+                }
+                g_free(sname);
+            }
+            g_free(wname); /* NULL-safe */
+
+        } else if (current) {
+            if (line[0] == '}') {
+                current = NULL;
+            } else if (g_str_has_prefix(line, "base[SELECTED]")) {
+                const char *eq = strchr(line, '=');
+                if (eq) { g_free(current->base_selected); current->base_selected = extract_quoted(eq + 1); }
+            } else if (g_str_has_prefix(line, "base[NORMAL]")) {
+                const char *eq = strchr(line, '=');
+                if (eq) { g_free(current->base_normal); current->base_normal = extract_quoted(eq + 1); }
+            } else if (g_str_has_prefix(line, "fg[NORMAL]")) {
+                const char *eq = strchr(line, '=');
+                if (eq) { g_free(current->fg_normal); current->fg_normal = extract_quoted(eq + 1); }
+            } else if (g_str_has_prefix(line, "font_name")) {
+                const char *eq = strchr(line, '=');
+                if (eq) { g_free(current->font_name); current->font_name = extract_quoted(eq + 1); }
+            }
+        }
+    }
+    fclose(fp);
+
+    LOG(LOG_DEBUG, "parse_theme_file",
+        "Parsed %u styles, %u widget bindings from '%s'",
+        g_hash_table_size(theme_style_map),
+        g_hash_table_size(theme_widget_map), path);
+}
+
+/**
+ * Look up a GdkRGBA color for @p widget_name from the parsed theme.
+ *
+ * @param widget_name  Widget class name as in the theme file
+ *                     (e.g. "hp_bar_normal", "inv_cursed").
+ * @param property     "base_selected", "base_normal", or "fg_normal".
+ * @param out          Receives the parsed color on success.
+ * @return TRUE if the color was found and successfully parsed.
+ */
+gboolean theme_lookup_rgba(const char *widget_name, const char *property,
+                            GdkRGBA *out) {
+    if (!theme_widget_map) return FALSE;
+    ThemeStyle *s = g_hash_table_lookup(theme_widget_map, widget_name);
+    if (!s) return FALSE;
+
+    const char *color = NULL;
+    if      (strcmp(property, "base_selected") == 0) color = s->base_selected;
+    else if (strcmp(property, "base_normal")   == 0) color = s->base_normal;
+    else if (strcmp(property, "fg_normal")     == 0) color = s->fg_normal;
+
+    return color ? gdk_rgba_parse(out, color) : FALSE;
+}
+
+/**
+ * Look up the font_name for @p widget_name from the parsed theme.
+ *
+ * @return A newly-allocated string the caller must g_free(), or NULL.
+ */
+gchar *theme_lookup_font(const char *widget_name) {
+    if (!theme_widget_map) return NULL;
+    ThemeStyle *s = g_hash_table_lookup(theme_widget_map, widget_name);
+    return (s && s->font_name) ? g_strdup(s->font_name) : NULL;
+}
 
 /**
  * Helper: load a CSS file into a provider and install it on the default screen.
@@ -152,31 +318,29 @@ void load_theme(int reload) {
         theme = g_strdup(data_path(THEME_DEFAULT));
     }
 
-    /* GTK3 port: only load theme files that are CSS (.css suffix).
-     * The bundled GTK2 RC theme files (themes/Standard, themes/Black) are
-     * not CSS and would fail to parse.  Skip the CSS load for non-CSS files
-     * but still notify subsystems so color tags are refreshed. */
+    /* Parse the theme file for RC-style color/font definitions used by
+     * stats_get_styles(), inventory_get_styles(), and spell_get_styles(). */
+    theme_clear();
+    parse_theme_file(theme);
+
+    /* Also load as a GTK3 CSS provider when the file ends with .css. */
     const char *suffix = strrchr(theme, '.');
     if (suffix && strcmp(suffix, ".css") == 0) {
-        /* Load the selected theme CSS at USER priority. */
         theme_css_provider = load_css_file(theme_css_provider, theme,
                                            GTK_STYLE_PROVIDER_PRIORITY_USER);
     } else {
         LOG(LOG_DEBUG, "load_theme",
-            "Skipping non-CSS theme file '%s'; use a .css file for GTK3 theming",
-            theme);
+            "Theme '%s' is RC format; colors parsed, CSS not loaded.", theme);
     }
 
-    /* Notify subsystems that style information may have changed.
-     * Called regardless of whether a CSS file was loaded so that color tags
-     * are always refreshed from root_color[] on theme reload. */
+    /* Notify subsystems — always, so color tables are refreshed. */
     info_get_styles();
     inventory_get_styles();
     stats_get_styles();
     spell_get_styles();
     update_spell_information();
 
-    /* Force inventory redraw after theme change. */
+    /* Force redraws after theme change. */
     cpl.below->inv_updated = 1;
     cpl.ob->inv_updated = 1;
     draw_lists();
