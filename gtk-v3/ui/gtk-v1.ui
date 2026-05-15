@@ -44,7 +44,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="use_underline">True</property>
-                            
+                            <property name="use_stock">True</property>
                             <property name="accel_group">accelgroup1</property>
                           </object>
                         </child>
@@ -54,7 +54,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="use_underline">True</property>
-                            
+                            <property name="use_stock">True</property>
                             <property name="accel_group">accelgroup1</property>
                           </object>
                         </child>
@@ -102,7 +102,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="use_underline">True</property>
-                            
+                            <property name="use_stock">True</property>
                             <property name="accel_group">accelgroup1</property>
                           </object>
                         </child>
@@ -148,7 +148,7 @@
                             <property name="can_focus">False</property>
                             <property name="tooltip_text" translatable="yes">Permenantly delete this character</property>
                             <property name="use_underline">True</property>
-                            
+                            <property name="use_stock">True</property>
                             <property name="accel_group">accelgroup1</property>
                           </object>
                         </child>
@@ -553,7 +553,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="use_underline">True</property>
-                            
+                            <property name="use_stock">True</property>
                             <property name="accel_group">accelgroup1</property>
                           </object>
                         </child>
