@@ -85,7 +85,8 @@ static char *ui_name() {
  */
 static GtkCssProvider *client_css_provider = NULL;
 static GtkCssProvider *layout_css_provider = NULL;
-static GtkCssProvider *theme_css_provider = NULL;
+static GtkCssProvider *theme_css_provider  = NULL;
+static GtkCssProvider *global_css_provider = NULL;
 
 /* ── RC-style theme file parser ──────────────────────────────────────── */
 
@@ -94,6 +95,10 @@ typedef struct {
     char *base_normal;   /* base[NORMAL]   — used by inventory/spell rows   */
     char *fg_normal;     /* fg[NORMAL]     — used by info text colors        */
     char *font_name;     /* font_name      — used by inventory/info fonts    */
+    char *bg_normal;     /* bg[NORMAL]     — window/widget background        */
+    char *text_normal;   /* text[NORMAL]   — entry/treeview text color       */
+    char *fg_active;     /* fg[ACTIVE]     — active-state foreground         */
+    char *bg_active;     /* bg[ACTIVE]     — active-state background (tabs)  */
 } ThemeStyle;
 
 static GHashTable *theme_style_map  = NULL; /* style_name -> ThemeStyle*        */
@@ -104,6 +109,10 @@ static void free_theme_style(ThemeStyle *s) {
     g_free(s->base_normal);
     g_free(s->fg_normal);
     g_free(s->font_name);
+    g_free(s->bg_normal);
+    g_free(s->text_normal);
+    g_free(s->fg_active);
+    g_free(s->bg_active);
     g_free(s);
 }
 
@@ -130,6 +139,70 @@ static char *extract_quoted(const char *s) {
 static void theme_clear(void) {
     if (theme_widget_map) { g_hash_table_destroy(theme_widget_map); theme_widget_map = NULL; }
     if (theme_style_map)  { g_hash_table_destroy(theme_style_map);  theme_style_map  = NULL; }
+}
+
+/**
+ * If the parsed theme has a widget_class "*" binding, convert that style to
+ * GTK3 CSS and load it via global_css_provider.  This bridges the GTK2 RC
+ * "set everything black" idiom used by themes/Black into the GTK3 world.
+ */
+static void apply_wildcard_theme_css(void) {
+    if (!theme_widget_map) return;
+    ThemeStyle *s = g_hash_table_lookup(theme_widget_map, "*");
+    if (!s) return;
+
+    GString *css = g_string_new(NULL);
+
+    /* Global background and foreground for all widgets. */
+    if (s->bg_normal || s->fg_normal) {
+        g_string_append(css, "* {\n");
+        if (s->bg_normal)  g_string_append_printf(css, "  background-color: %s;\n", s->bg_normal);
+        if (s->fg_normal)  g_string_append_printf(css, "  color: %s;\n",            s->fg_normal);
+        g_string_append(css, "}\n");
+    }
+
+    /* Entry widgets and tree views use base[NORMAL]/text[NORMAL]. */
+    if (s->base_normal || s->text_normal) {
+        g_string_append(css, "entry, treeview {\n");
+        if (s->base_normal) g_string_append_printf(css, "  background-color: %s;\n", s->base_normal);
+        if (s->text_normal) g_string_append_printf(css, "  color: %s;\n",            s->text_normal);
+        g_string_append(css, "}\n");
+        /* Treeview cells inherit their colors from the view, not rows. */
+        if (s->base_normal)
+            g_string_append_printf(css,
+                "treeview.view { background-color: %s; }\n", s->base_normal);
+    }
+
+    /* Notebook active tab uses bg[ACTIVE]/fg[ACTIVE]. */
+    if (s->bg_active || s->fg_active) {
+        g_string_append(css, ".notebook tab:checked {\n");
+        if (s->bg_active) g_string_append_printf(css, "  background-color: %s;\n", s->bg_active);
+        if (s->fg_active) g_string_append_printf(css, "  color: %s;\n",            s->fg_active);
+        g_string_append(css, "}\n");
+    }
+
+    if (css->len == 0) {
+        g_string_free(css, TRUE);
+        return;
+    }
+
+    if (!global_css_provider)
+        global_css_provider = gtk_css_provider_new();
+
+    GError *error = NULL;
+    gtk_css_provider_load_from_data(global_css_provider, css->str, (gssize)css->len, &error);
+    if (error) {
+        LOG(LOG_ERROR, "apply_wildcard_theme_css", "CSS error: %s", error->message);
+        g_error_free(error);
+    } else {
+        gtk_style_context_add_provider_for_screen(
+            gdk_screen_get_default(),
+            GTK_STYLE_PROVIDER(global_css_provider),
+            GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+        LOG(LOG_DEBUG, "apply_wildcard_theme_css",
+            "Global wildcard CSS applied (%zu bytes)", css->len);
+    }
+    g_string_free(css, TRUE);
 }
 
 /**
@@ -199,6 +272,18 @@ static void parse_theme_file(const char *path) {
             } else if (g_str_has_prefix(line, "fg[NORMAL]")) {
                 const char *eq = strchr(line, '=');
                 if (eq) { g_free(current->fg_normal); current->fg_normal = extract_quoted(eq + 1); }
+            } else if (g_str_has_prefix(line, "bg[NORMAL]")) {
+                const char *eq = strchr(line, '=');
+                if (eq) { g_free(current->bg_normal); current->bg_normal = extract_quoted(eq + 1); }
+            } else if (g_str_has_prefix(line, "text[NORMAL]")) {
+                const char *eq = strchr(line, '=');
+                if (eq) { g_free(current->text_normal); current->text_normal = extract_quoted(eq + 1); }
+            } else if (g_str_has_prefix(line, "fg[ACTIVE]")) {
+                const char *eq = strchr(line, '=');
+                if (eq) { g_free(current->fg_active); current->fg_active = extract_quoted(eq + 1); }
+            } else if (g_str_has_prefix(line, "bg[ACTIVE]")) {
+                const char *eq = strchr(line, '=');
+                if (eq) { g_free(current->bg_active); current->bg_active = extract_quoted(eq + 1); }
             } else if (g_str_has_prefix(line, "font_name")) {
                 const char *eq = strchr(line, '=');
                 if (eq) { g_free(current->font_name); current->font_name = extract_quoted(eq + 1); }
@@ -322,6 +407,7 @@ void load_theme(int reload) {
      * stats_get_styles(), inventory_get_styles(), and spell_get_styles(). */
     theme_clear();
     parse_theme_file(theme);
+    apply_wildcard_theme_css(); /* Convert widget_class "*" binding to CSS. */
 
     /* Also load as a GTK3 CSS provider when the file ends with .css. */
     const char *suffix = strrchr(theme, '.');
