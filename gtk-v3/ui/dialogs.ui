@@ -1822,7 +1822,7 @@ Attribute</property>
   </object>
   <object class="GtkWindow" id="connect_window">
     <property name="can_focus">True</property>
-    <property name="title" translatable="yes">Crossfire Client</property>
+    <property name="title" translatable="yes">Crossfire Client - GTK v3</property>
     <property name="window_position">center-on-parent</property>
     <property name="default_width">800</property>
     <property name="default_height">400</property>
