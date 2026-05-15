@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <requires lib="gtk+" version="2.16"/>
+  <requires lib="gtk+" version="3.0"/>
   <!-- interface-naming-policy toplevel-contextual -->
   <object class="GtkAdjustment" id="adjustment1">
     <property name="upper">1000000</property>
@@ -907,7 +907,6 @@
                                     <property name="height_request">13</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="text_xalign">0</property>
                                     <property name="pulse_step">0.10000000149</property>
                                     <property name="text" translatable="yes"> HP</property>
                                   </object>
@@ -923,7 +922,6 @@
                                     <property name="height_request">13</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="text_xalign">0</property>
                                     <property name="pulse_step">0.10000000149</property>
                                     <property name="text" translatable="yes"> SP</property>
                                   </object>
@@ -941,7 +939,6 @@
                                     <property name="height_request">13</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="text_xalign">0</property>
                                     <property name="pulse_step">0.10000000149</property>
                                     <property name="text" translatable="yes"> Grace</property>
                                   </object>
@@ -959,7 +956,6 @@
                                     <property name="height_request">13</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="text_xalign">0</property>
                                     <property name="pulse_step">0.10000000149</property>
                                     <property name="text" translatable="yes"> Food</property>
                                   </object>
@@ -977,7 +973,6 @@
                                     <property name="height_request">13</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="text_xalign">0</property>
                                     <property name="pulse_step">0.10000000149</property>
                                     <property name="text" translatable="yes"> Exp to Next Level</property>
                                   </object>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <requires lib="gtk+" version="2.24"/>
+  <requires lib="gtk+" version="3.0"/>
   <!-- interface-naming-policy project-wide -->
   <object class="GtkAboutDialog" id="about_window">
     <property name="can_focus">False</property>
@@ -364,7 +364,7 @@ Kevin Zheng &lt;kevinz5000@gmail.com&gt;</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="tooltip_text" translatable="yes">Apply and save the currently displayed settings to disk.</property>
-                <property name="use_stock">True</property>
+                
                 <signal name="clicked" handler="on_msgctrl_button_save_clicked" swapped="no"/>
               </object>
               <packing>
@@ -410,7 +410,7 @@ Kevin Zheng &lt;kevinz5000@gmail.com&gt;</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="tooltip_text" translatable="yes">Apply the currently displayed settings.</property>
-                <property name="use_stock">True</property>
+                
                 <signal name="clicked" handler="on_msgctrl_button_apply_clicked" swapped="no"/>
               </object>
               <packing>
@@ -427,7 +427,7 @@ Kevin Zheng &lt;kevinz5000@gmail.com&gt;</property>
                 <property name="has_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="tooltip_text" translatable="yes">Apply the displayed settings and close the dialog.</property>
-                <property name="use_stock">True</property>
+                
                 <signal name="clicked" handler="on_msgctrl_button_close_clicked" swapped="no"/>
               </object>
               <packing>
@@ -1625,7 +1625,7 @@ Attribute</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="use_stock">True</property>
+                    
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -1639,7 +1639,7 @@ Attribute</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="use_stock">True</property>
+                    
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -1785,7 +1785,7 @@ Attribute</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="use_stock">True</property>
+                    
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -1799,7 +1799,7 @@ Attribute</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="use_stock">True</property>
+                    
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -1955,7 +1955,7 @@ Attribute</property>
                             <property name="has_default">True</property>
                             <property name="receives_default">True</property>
                             <property name="use_underline">True</property>
-                            <property name="use_stock">True</property>
+                            
                             <signal name="clicked" handler="on_metaserver_select_clicked" swapped="no"/>
                           </object>
                           <packing>
@@ -2235,7 +2235,7 @@ Attribute</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
-                                        <property name="use_stock">True</property>
+                                        
                                       </object>
                                       <packing>
                                         <property name="expand">True</property>
@@ -2586,7 +2586,7 @@ Attribute</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <property name="use_stock">True</property>
+                            
                             <signal name="pressed" handler="activate_new_cancel" swapped="no"/>
                             <signal name="activate" handler="activate_new_cancel" swapped="no"/>
                           </object>
@@ -2696,7 +2696,7 @@ Attribute</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <property name="use_stock">True</property>
+                            
                           </object>
                           <packing>
                             <property name="expand">True</property>
@@ -2711,7 +2711,7 @@ Attribute</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="tooltip_text" translatable="yes">Create a new character</property>
-                            <property name="use_stock">True</property>
+                            
                             <signal name="pressed" handler="activate_create_character" swapped="no"/>
                             <signal name="activate" handler="activate_create_character" swapped="no"/>
                           </object>
@@ -2759,7 +2759,7 @@ Attribute</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <property name="use_stock">True</property>
+                            
                             <signal name="pressed" handler="activate_play_character" swapped="no"/>
                             <signal name="activate" handler="activate_play_character" swapped="no"/>
                           </object>
@@ -2989,7 +2989,7 @@ Attribute</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <property name="use_stock">True</property>
+                            
                             <property name="image_position">right</property>
                             <signal name="pressed" handler="activate_account_password_cancel" swapped="no"/>
                             <signal name="activate" handler="activate_account_password_cancel" swapped="no"/>
@@ -3006,7 +3006,7 @@ Attribute</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <property name="use_stock">True</property>
+                            
                             <signal name="pressed" handler="activate_account_password_confirm" swapped="no"/>
                             <signal name="activate" handler="activate_account_password_confirm" swapped="no"/>
                           </object>
@@ -3229,7 +3229,7 @@ Enter a character name and password to add this account. The character must alre
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
-                                <property name="use_stock">True</property>
+                                
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -3243,7 +3243,7 @@ Enter a character name and password to add this account. The character must alre
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
-                                <property name="use_stock">True</property>
+                                
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -3294,7 +3294,7 @@ Enter a character name and password to add this account. The character must alre
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="receives_default">False</property>
-                    <property name="use_stock">True</property>
+                    
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -3308,7 +3308,7 @@ Enter a character name and password to add this account. The character must alre
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="use_stock">True</property>
+                    
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -3322,7 +3322,7 @@ Enter a character name and password to add this account. The character must alre
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="receives_default">False</property>
-                    <property name="use_stock">True</property>
+                    
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -3681,7 +3681,7 @@ Enter a character name and password to add this account. The character must alre
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
                 <property name="use_underline">True</property>
-                <property name="use_stock">True</property>
+                
                 <signal name="clicked" handler="on_keybinding_button_remove_clicked" swapped="no"/>
               </object>
               <packing>
@@ -3712,7 +3712,7 @@ Enter a character name and password to add this account. The character must alre
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
                 <property name="use_underline">True</property>
-                <property name="use_stock">True</property>
+                
                 <signal name="clicked" handler="on_keybinding_button_bind_clicked" swapped="no"/>
               </object>
               <packing>
@@ -3728,7 +3728,7 @@ Enter a character name and password to add this account. The character must alre
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
                 <property name="use_underline">True</property>
-                <property name="use_stock">True</property>
+                
                 <signal name="clicked" handler="on_keybinding_button_clear_clicked" swapped="no"/>
               </object>
               <packing>
@@ -3744,7 +3744,7 @@ Enter a character name and password to add this account. The character must alre
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
                 <property name="use_underline">True</property>
-                <property name="use_stock">True</property>
+                
                 <signal name="clicked" handler="on_keybinding_button_close_clicked" swapped="no"/>
               </object>
               <packing>
@@ -3815,7 +3815,7 @@ Enter a character name and password to add this account. The character must alre
                 <property name="can_default">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_underline">True</property>
-                <property name="use_stock">True</property>
+                
                 <signal name="clicked" handler="on_config_button_close_clicked" swapped="no"/>
               </object>
               <packing>
@@ -4358,7 +4358,7 @@ Enter a character name and password to add this account. The character must alre
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_underline">True</property>
-                <property name="use_stock">True</property>
+                
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -4581,7 +4581,7 @@ Enter a character name and password to add this account. The character must alre
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
                 <property name="use_underline">True</property>
-                <property name="use_stock">True</property>
+                
                 <signal name="clicked" handler="on_spell_close_clicked" swapped="no"/>
               </object>
               <packing>
